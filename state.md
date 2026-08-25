@@ -1,8 +1,8 @@
-# auris
+# aures
 
 App HTML autocontenida para transcribir canciones. Un solo archivo, `index.html`, sin dependencias ni servidor: se abre con doble click y se le arrastra el audio encima.
 
-Creada el 2026-08-25. Nombrada `auris` (latin: el oido, y en Ciceron el criterio del oyente formado) el 2026-08-25.
+Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos, y en latin clasico la facultad de oir y el juicio de quien la tiene educada (`aures eruditae`). Se descarto el singular `auris` porque designa el organo, no el oido musical.
 
 ## Decisiones
 
@@ -17,6 +17,9 @@ Creada el 2026-08-25. Nombrada `auris` (latin: el oido, y en Ciceron el criterio
 - Etiquetas con reserva de hueco: si dos marcadores se pisarian, la segunda etiqueta no se dibuja y queda solo la marca.
 - Atajos en modal sobre la onda en vez de panel fijo en el lateral, para no gastar espacio permanente.
 - Teclas de transporte estilo JKL. `L` paso de ser loop on/off a seek adelante; el loop on/off se movio a `R`.
+
+- Licencia GPL-3.0-or-later, elegida por mykl el 2026-08-25. Texto canonico descargado de gnu.org, no transcrito.
+- Repo publico: GitHub Pages no sirve repos privados sin plan de pago.
 
 ## Estado y pendientes
 
