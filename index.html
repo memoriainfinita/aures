@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transcript</title>
+<style>
+:root{
+  --bg:#0e0f12; --panel:#16181d; --line:#23262e; --fg:#e6e8ec; --dim:#8a90a0;
+  --wave:#4a9eff; --wave-dim:#2b5d96; --head:#ff5252; --loop:#ffc400; --mark:#ffb300;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); color:var(--fg); overflow:hidden;
+  font:13px/1.4 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+}
+button,input,select{font:inherit;color:inherit}
+button{
+  background:#1e2129;border:1px solid var(--line);border-radius:4px;
+  padding:5px 10px;cursor:pointer
+}
+button:hover{background:#272b35}
+button.on{background:var(--wave-dim);border-color:var(--wave)}
+
+#drop{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:14px;z-index:10;background:var(--bg);cursor:pointer
+}
+#drop.hide{display:none}
+#drop .box{
+  border:2px dashed var(--line);border-radius:10px;padding:60px 80px;text-align:center;
+  transition:border-color .15s,background .15s
+}
+#drop.over .box{border-color:var(--wave);background:#12161f}
+#drop h1{margin:0 0 6px;font-size:19px;font-weight:600;letter-spacing:.02em}
+#drop p{margin:0;color:var(--dim)}
+
+#app{display:none;height:100%;flex-direction:column}
+#app.show{display:flex}
+
+header{
+  display:flex;align-items:center;gap:12px;padding:8px 12px;
+  border-bottom:1px solid var(--line);background:var(--panel);flex:0 0 auto
+}
+header .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+header .meta{color:var(--dim);margin-left:auto;white-space:nowrap}
+
+main{flex:1 1 auto;display:flex;min-height:0;min-width:0}
+#waves{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0}
+/* el canvas va en absoluto: asi su tamano de buffer no realimenta el layout flex */
+#mainwrap{flex:1 1 auto;position:relative;min-height:0;overflow:hidden}
+#main{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+#over{
+  flex:0 0 74px;height:74px;display:block;width:100%;
+  border-top:1px solid var(--line);cursor:pointer
+}
+/* abajo del todo y efimero: nunca debe tapar la escala de tiempo */
+#hint{
+  position:absolute;bottom:8px;right:10px;color:var(--dim);font-size:11px;
+  background:rgba(14,15,18,.82);padding:3px 7px;border-radius:4px;pointer-events:none;
+  max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  opacity:1;transition:opacity .35s
+}
+#hint.off{opacity:0}
+
+aside{
+  flex:0 0 250px;border-left:1px solid var(--line);background:var(--panel);
+  display:flex;flex-direction:column;min-height:0
+}
+aside h2{
+  margin:0;padding:9px 12px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--dim);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px
+}
+aside h2 button{padding:2px 8px;font-size:11px;margin-left:auto}
+aside h2.sec{border-left:3px solid var(--mark)}
+aside h2.cho{border-left:3px solid #3ddc97;border-top:1px solid var(--line)}
+#mlist,#clist{flex:1 1 auto;overflow-y:auto;min-height:44px}
+#clist{flex-grow:1.6}                              /* los acordes suelen ser muchos mas */
+#mlist .empty,#clist .empty{padding:12px;color:var(--dim);font-size:11px}
+.mk{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid #1c1f26}
+.mk:hover{background:#1c1f26}
+.mk .n{width:16px;text-align:right;color:var(--dim);font-size:11px}
+.mk .t{
+  font-variant-numeric:tabular-nums;color:var(--mark);cursor:pointer;
+  font-size:11px;min-width:52px
+}
+.mk input{
+  flex:1 1 auto;min-width:0;background:transparent;border:1px solid transparent;
+  border-radius:3px;padding:2px 4px
+}
+.mk input:hover{border-color:var(--line)}
+.mk input:focus{outline:none;border-color:var(--wave);background:#0e0f12}
+.mk button{padding:1px 6px;font-size:11px;background:transparent;border-color:transparent}
+.mk button:hover{background:#2b2f3a;border-color:var(--line)}
+/* modal de atajos, sobre la onda */
+#help{
+  position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
+  padding:16px;background:rgba(10,11,14,.72)
+}
+#help.off{display:none}
+#help .panel{
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:14px 18px 16px;width:100%;max-width:660px;max-height:100%;overflow-y:auto;
+  box-shadow:0 14px 44px rgba(0,0,0,.55)
+}
+#help .top{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)
+}
+#help .top button{margin-left:auto;padding:2px 10px;font-size:11px}
+#help h3{
+  margin:0 0 6px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--wave)
+}
+#help .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px 26px}
+#help .row{display:flex;gap:10px;padding:1.5px 0;font-size:12px;color:var(--dim)}
+#help b{
+  color:var(--fg);font-weight:500;flex:0 0 auto;min-width:104px;
+  font-family:ui-monospace,monospace
+}
+#help .row b + b{min-width:0}
+@media (max-width:620px){ #help .cols{grid-template-columns:1fr} }
+
+footer{
+  flex:0 0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:8px 12px;border-top:1px solid var(--line);background:var(--panel)
+}
+footer .grp{display:flex;align-items:center;gap:6px}
+footer label{color:var(--dim)}
+#time{font-variant-numeric:tabular-nums;font-size:15px;min-width:150px}
+#time span{color:var(--dim);font-size:12px}
+input[type=range]{width:120px;accent-color:var(--wave)}
+input[type=color]{
+  width:30px;height:24px;padding:0;border:1px solid var(--line);
+  border-radius:4px;background:transparent;cursor:pointer
+}
+#rateval{font-variant-numeric:tabular-nums;min-width:44px;color:var(--wave)}
+#loopinfo{color:var(--dim);font-variant-numeric:tabular-nums;min-width:158px}
+#status{color:var(--dim);margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+@media (max-width:1100px){
+  aside{flex:0 0 210px}
+}
+@media (max-height:620px){
+  #over{flex-basis:52px;height:52px}
+}
+@media (max-width:880px){
+  main{flex-direction:column}
+  aside{
+    flex:0 0 190px;border-left:none;border-top:1px solid var(--line)
+  }
+  #over{flex-basis:56px;height:56px}
+}
+@media (max-width:680px){
+  header .meta{display:none}
+  footer{gap:8px;padding:6px 8px}
+  #time{min-width:118px;font-size:13px}
+  #loopinfo{min-width:0;font-size:11px}
+  #status{display:none}
+  input[type=range]{width:88px}
+  .preset{display:none}
+  #drop .box{padding:36px 24px}
+}
+</style>
+</head>
+<body>
+
+<div id="drop">
+  <div class="box">
+    <h1>Transcript</h1>
+    <p>Arrastra un archivo de audio, o haz click para elegirlo</p>
+  </div>
+  <input type="file" id="file" accept="audio/*" hidden>
+</div>
+
+<div id="app">
+  <header>
+    <span class="name" id="fname"></span>
+    <button id="hintbtn" title="Mostrar u ocultar la ayuda sobre la onda">?</button>
+    <button id="close" title="Cargar otro archivo">Cambiar archivo</button>
+    <span class="meta" id="fmeta"></span>
+  </header>
+
+  <main>
+    <section id="waves">
+      <div id="mainwrap">
+        <canvas id="main"></canvas>
+        <div id="hint">pulsa ? para ver los atajos</div>
+
+        <div id="help" class="off">
+          <div class="panel">
+            <div class="top">
+              <span>Atajos</span>
+              <button id="helpclose" title="Cerrar (Esc)">Cerrar</button>
+            </div>
+            <div class="cols">
+              <div>
+                <h3>Raton</h3>
+                <div class="row"><b>rueda</b>zoom sobre el cursor</div>
+                <div class="row"><b>shift + rueda</b>desplazar la vista</div>
+                <div class="row"><b>click</b>ir a esa posicion</div>
+                <div class="row"><b>arrastrar</b>crear loop y reproducirlo</div>
+                <div class="row"><b>bordes del loop</b>arrastrar para ajustar</div>
+                <div class="row"><b>bandas</b>arrastrar secciones y acordes</div>
+                <div class="row"><b>doble click</b>loop hasta el siguiente marcador</div>
+                <div class="row"><b>tira inferior</b>mover la vista por la cancion</div>
+              </div>
+              <div>
+                <h3>Teclado</h3>
+                <div class="row"><b>K / espacio</b>play / pausa</div>
+                <div class="row"><b>J / L</b>seek atras / adelante</div>
+                <div class="row"><b>&larr; &rarr;</b>seek 5s (shift 1s, alt 0.1s)</div>
+                <div class="row"><b>&uarr; &darr;</b>zoom &middot; <b>0</b> ver todo</div>
+                <div class="row"><b>M</b>seccion aqui</div>
+                <div class="row"><b>C</b>acorde aqui</div>
+                <div class="row"><b>I / O</b>loop in / out</div>
+                <div class="row"><b>R</b>loop on/off</div>
+                <div class="row"><b>, .</b>ajustar inicio del loop</div>
+                <div class="row"><b>&lt; &gt;</b>ajustar fin del loop</div>
+                <div class="row"><b>1..9</b>ir a la seccion n</div>
+                <div class="row"><b>+ -</b>velocidad</div>
+                <div class="row"><b>F</b>seguir el cursor</div>
+                <div class="row"><b>inicio</b>volver al principio</div>
+                <div class="row"><b>? / H</b>abrir o cerrar esta ayuda</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <canvas id="over"></canvas>
+    </section>
+
+    <aside>
+      <h2 class="sec">Secciones <button id="addmk">Anadir</button></h2>
+      <div id="mlist"></div>
+      <h2 class="cho">Acordes <button id="addch">Anadir</button></h2>
+      <div id="clist"></div>
+    </aside>
+  </main>
+
+  <footer>
+    <div class="grp">
+      <button id="play" style="min-width:74px">Play</button>
+      <button id="home" title="Al principio">|&lt;</button>
+    </div>
+    <div id="time">0:00.000 <span>/ 0:00.000</span></div>
+    <div class="grp">
+      <button id="loopbtn">Loop</button>
+      <span id="loopinfo">sin seleccion</span>
+      <button id="loopclr" title="Borrar seleccion">Borrar</button>
+    </div>
+    <div class="grp">
+      <label for="rate">Vel.</label>
+      <input type="range" id="rate" min="0.25" max="1.5" step="0.05" value="1">
+      <span id="rateval">1.00x</span>
+      <button class="preset" data-r="0.5">0.5</button>
+      <button class="preset" data-r="0.75">0.75</button>
+      <button class="preset" data-r="1">1</button>
+    </div>
+    <div class="grp">
+      <label><input type="checkbox" id="pitch" checked> preservar tono</label>
+    </div>
+    <div class="grp">
+      <label for="vol">Vol.</label>
+      <input type="range" id="vol" min="0" max="1" step="0.01" value="1">
+    </div>
+    <div class="grp">
+      <label for="accent">Color</label>
+      <input type="color" id="accent" value="#4a9eff" title="Color de la onda">
+    </div>
+    <div id="status"></div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const SPP = 128;                       // muestras por pico almacenado
+const audio = new Audio();
+audio.preload = "auto";
+
+const S = {
+  url:null, key:null, name:"",
+  peaks:null, nPeaks:0, sampleRate:44100, duration:0,
+  view:{s:0, e:0},
+  loop:{on:false, s:null, e:null},
+  markers:[],                                      // secciones
+  chords:[],                                       // acordes
+  follow:true
+};
+
+/* ---------- utilidades ---------- */
+
+function fmt(t){
+  if(!isFinite(t)) t = 0;
+  const m = Math.floor(t/60), s = Math.floor(t%60), ms = Math.floor((t%1)*1000);
+  return m + ":" + String(s).padStart(2,"0") + "." + String(ms).padStart(3,"0");
+}
+function fmtShort(t){
+  const m = Math.floor(t/60), s = Math.floor(t%60);
+  return m + ":" + String(s).padStart(2,"0");
+}
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+function setStatus(msg){ $("status").textContent = msg || ""; }
+
+/* ---------- carga de archivo ---------- */
+
+async function load(file){
+  if(!file) return;
+  if(S.url) URL.revokeObjectURL(S.url);
+  S.peaks = null; S.nPeaks = 0;
+  S.markers = []; S.chords = []; S.loop = {on:false, s:null, e:null};
+  S.name = file.name;
+  S.url = URL.createObjectURL(file);
+  audio.src = S.url;
+
+  $("drop").classList.add("hide");
+  $("app").classList.add("show");
+  $("fname").textContent = file.name;
+  $("fmeta").textContent = "";
+  setStatus("decodificando...");
+  renderAll();
+  resize();
+
+  // reproducible antes de tener la onda dibujada
+  await new Promise(res => {
+    if(audio.readyState >= 1) return res();
+    audio.addEventListener("loadedmetadata", res, {once:true});
+  });
+  S.duration = audio.duration || 0;
+  S.view = {s:0, e:S.duration};
+
+  S.key = "transcript:" + file.name + ":" + file.size + ":" + S.duration.toFixed(2);
+  restore();
+  renderAll();
+  refresh();
+  draw();
+
+  try{
+    const buf = await file.arrayBuffer();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await ctx.decodeAudioData(buf);
+    ctx.close();
+    buildPeaks(ab);
+    if(isFinite(ab.duration) && Math.abs(ab.duration - S.duration) > 0.05){
+      S.duration = ab.duration;
+      if(S.view.e <= 0 || S.view.e > S.duration) S.view = {s:0, e:S.duration};
+    }
+    setStatus("");
+  }catch(err){
+    console.error(err);
+    setStatus("no se pudo dibujar la onda (formato no soportado); la reproduccion funciona igual");
+  }
+  $("fmeta").textContent = fmtShort(S.duration) + "  ·  " + (S.sampleRate/1000).toFixed(1) + " kHz";
+  draw();
+  hintShow();
+}
+
+function buildPeaks(ab){
+  S.sampleRate = ab.sampleRate;
+  const n = ab.length, ch = ab.numberOfChannels;
+  const data = [];
+  for(let c = 0; c < ch; c++) data.push(ab.getChannelData(c));
+  const np = Math.ceil(n / SPP);
+  const mn = new Float32Array(np), mx = new Float32Array(np);
+  for(let p = 0; p < np; p++){
+    const a = p*SPP, b = Math.min(a + SPP, n);
+    let lo = 1, hi = -1;
+    for(let i = a; i < b; i++){
+      let v = 0;
+      for(let c = 0; c < ch; c++) v += data[c][i];
+      v /= ch;
+      if(v < lo) lo = v;
+      if(v > hi) hi = v;
+    }
+    mn[p] = lo; mx[p] = hi;
+  }
+  S.peaks = {mn, mx};
+  S.nPeaks = np;
+}
+
+/* ---------- persistencia ---------- */
+
+let saveT = null;
+function save(){
+  if(!S.key) return;
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    try{
+      localStorage.setItem(S.key, JSON.stringify({
+        markers: S.markers,
+        chords: S.chords,
+        loop: S.loop,
+        rate: audio.playbackRate,
+        pitch: $("pitch").checked
+      }));
+    }catch(e){ /* cuota llena o modo privado: no es critico */ }
+  }, 300);
+}
+function restore(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem(S.key) || "null"); }catch(e){}
+  if(!d) return;
+  S.markers = Array.isArray(d.markers) ? d.markers : [];
+  S.chords  = Array.isArray(d.chords)  ? d.chords  : [];
+  if(d.loop) S.loop = {on:!!d.loop.on, s:d.loop.s, e:d.loop.e};
+  if(d.rate) setRate(d.rate);
+  if(typeof d.pitch === "boolean"){ $("pitch").checked = d.pitch; applyPitch(); }
+}
+
+/* ---------- canvas ---------- */
+
+const mc = $("main"), oc = $("over");
+const mx2 = mc.getContext("2d"), ox2 = oc.getContext("2d");
+let dpr = 1;
+
+// bandas superiores, en px CSS, apiladas de arriba abajo
+const RUL = 15;                                    // escala de tiempo
+const SEC = 20;                                    // marcadores de seccion
+const CHO = 18;                                    // marcadores de acorde
+const LANE = RUL + SEC + CHO;                      // alto total: la onda empieza aqui
+
+// definicion de las dos bandas de marcadores
+const BANDS = {
+  sec: {y0:RUL, y1:RUL+SEC, key:"markers", fill:"#ffb300", text:"#ffcf62",
+        flag:true,  list:"mlist", ph:"seccion",
+        empty:"Sin secciones. Pulsa M durante la reproduccion."},
+  cho: {y0:RUL+SEC, y1:LANE,  key:"chords",  fill:"#3ddc97", text:"#9af0c8",
+        flag:false, list:"clist", ph:"acorde",
+        empty:"Sin acordes. Pulsa C durante la reproduccion."}
+};
+/* ---------- color de acento ---------- */
+
+let ACC = "#4a9eff", ACC_DIM = "#2f5f96", ACC_SEL = "rgba(74,158,255,.18)";
+
+function mix(hex, over, f){                        // f = cuanto de "over"
+  const a = parseInt(hex.slice(1), 16), b = parseInt(over.slice(1), 16);
+  const c = [16,8,0].map(s =>
+    Math.round((((a>>s)&255) * (1-f)) + (((b>>s)&255) * f)));
+  return "#" + c.map(v => v.toString(16).padStart(2,"0")).join("");
+}
+function rgba(hex, al){
+  const n = parseInt(hex.slice(1), 16);
+  return "rgba(" + ((n>>16)&255) + "," + ((n>>8)&255) + "," + (n&255) + "," + al + ")";
+}
+function setAccent(hex, persist){
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  ACC = hex.toLowerCase();
+  ACC_DIM = mix(ACC, "#0e0f12", .45);              // onda del overview, mas apagada
+  ACC_SEL = rgba(ACC, .18);
+  const root = document.documentElement.style;
+  root.setProperty("--wave", ACC);
+  root.setProperty("--wave-dim", mix(ACC, "#0e0f12", .55));
+  $("accent").value = ACC;
+  if(persist !== false){
+    try{ localStorage.setItem("transcript:accent", ACC); }catch(e){}
+  }
+  draw();
+}
+
+function bandAt(y){
+  if(y >= BANDS.sec.y0 && y < BANDS.sec.y1) return "sec";
+  if(y >= BANDS.cho.y0 && y < BANDS.cho.y1) return "cho";
+  return null;
+}
+
+function resize(){
+  dpr = window.devicePixelRatio || 1;
+  let changed = false;
+  for(const c of [mc, oc]){
+    const r = c.getBoundingClientRect();
+    if(r.width < 1 || r.height < 1) continue;          // panel oculto o aun sin layout
+    const w = Math.max(1, Math.round(r.width * dpr));
+    const h = Math.max(1, Math.round(r.height * dpr));
+    if(c.width !== w || c.height !== h){ c.width = w; c.height = h; changed = true; }
+  }
+  if(changed || !S.duration) draw();
+}
+
+// ResizeObserver en vez de window.resize: tambien capta el footer al envolverse,
+// los breakpoints y cualquier cambio de layout que no venga de la ventana
+if(window.ResizeObserver){
+  new ResizeObserver(() => resize()).observe($("waves"));
+}else{
+  window.addEventListener("resize", resize);
+}
+
+// cambio de densidad de pixel (mover la ventana a otro monitor)
+let dprMQ = null;
+function watchDpr(){
+  try{
+    if(dprMQ) dprMQ.removeEventListener("change", onDpr);
+    dprMQ = matchMedia("(resolution: " + (window.devicePixelRatio || 1) + "dppx)");
+    dprMQ.addEventListener("change", onDpr);
+  }catch(e){ /* navegador sin soporte: se pierde el reajuste al cambiar de monitor */ }
+}
+function onDpr(){ watchDpr(); resize(); }
+watchDpr();
+
+function xToTime(x, w, v){ return v.s + (x / w) * (v.e - v.s); }
+function timeToX(t, w, v){ return ((t - v.s) / (v.e - v.s)) * w; }
+
+function peakRange(t0, t1){
+  const sr = S.sampleRate;
+  let p0 = Math.floor(t0 * sr / SPP), p1 = Math.ceil(t1 * sr / SPP);
+  p0 = clamp(p0, 0, S.nPeaks - 1);
+  p1 = clamp(p1, p0 + 1, S.nPeaks);
+  let lo = 1, hi = -1;
+  for(let p = p0; p < p1; p++){
+    if(S.peaks.mn[p] < lo) lo = S.peaks.mn[p];
+    if(S.peaks.mx[p] > hi) hi = S.peaks.mx[p];
+  }
+  if(hi < lo){ lo = 0; hi = 0; }
+  return [lo, hi];
+}
+
+function drawWave(ctx, w, h, v, top, color){
+  if(!S.peaks || v.e <= v.s) return;
+  const mid = top + (h - top)/2, amp = (h - top)/2 * 0.94;
+  ctx.fillStyle = color;
+  const step = Math.max(1, Math.round(dpr));
+  for(let x = 0; x < w; x += step){
+    const t0 = xToTime(x, w, v), t1 = xToTime(x + step, w, v);
+    if(t1 <= 0 || t0 >= S.duration) continue;
+    const r = peakRange(Math.max(0,t0), Math.min(S.duration,t1));
+    const y0 = mid - r[1]*amp, y1 = mid - r[0]*amp;
+    ctx.fillRect(x, y0, step, Math.max(step, y1 - y0));
+  }
+}
+
+function drawRuler(ctx, w, v, h){
+  const span = v.e - v.s;
+  if(span <= 0) return;
+  const steps = [0.05,0.1,0.25,0.5,1,2,5,10,15,30,60,120,300];
+  const minPx = 68 * dpr;
+  let st = steps[steps.length-1];
+  for(const s of steps){ if((s/span)*w >= minPx){ st = s; break; } }
+  ctx.fillStyle = "#6a7080";
+  ctx.font = (10*dpr) + "px ui-monospace,monospace";
+  ctx.textBaseline = "bottom";
+  ctx.strokeStyle = "#1e222a";
+  ctx.lineWidth = dpr;
+  for(let t = Math.ceil(v.s/st)*st; t <= v.e; t += st){
+    const x = Math.round(timeToX(t, w, v)) + .5;
+    // marca corta en la banda de la escala, linea larga sobre la onda
+    ctx.beginPath(); ctx.moveTo(x, (RUL-4)*dpr); ctx.lineTo(x, RUL*dpr); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, LANE*dpr);    ctx.lineTo(x, h);       ctx.stroke();
+    ctx.fillText(st < 1 ? t.toFixed(2) : fmtShort(t), x + 4*dpr, (RUL - 3)*dpr);
+  }
+}
+
+// una banda de marcadores: linea guia, marca y etiqueta con reserva de hueco
+function drawBand(name, w, h, v){
+  const B = BANDS[name], arr = S[B.key];
+  if(!arr.length) return;
+  const y0 = B.y0*dpr, y1 = B.y1*dpr, hh = y1 - y0;
+  mx2.font = (B.flag ? 11*dpr : 10.5*dpr) + "px ui-sans-serif,system-ui,sans-serif";
+  mx2.textBaseline = "middle";
+  let lastRight = -1e9;                            // borde derecho de la ultima etiqueta
+  arr.forEach((m, i) => {
+    const x = timeToX(m.t, w, v);
+    if(x < -80*dpr || x > w + 80*dpr) return;
+    mx2.fillStyle = B.fill;
+    if(B.flag){
+      mx2.fillRect(x, y0, dpr, h - y0);            // seccion: guia hasta abajo
+      mx2.beginPath();
+      mx2.moveTo(x, y0 + 2*dpr);
+      mx2.lineTo(x + 9*dpr, y0 + hh/2);
+      mx2.lineTo(x, y1 - 2*dpr);
+      mx2.closePath(); mx2.fill();
+    }else{
+      mx2.fillRect(x, y0, 2.5*dpr, hh);            // acorde: marca gruesa en su banda
+      mx2.fillStyle = "rgba(61,220,151,.20)";      // y guia tenue sobre la onda
+      mx2.fillRect(x, LANE*dpr, dpr, h - LANE*dpr);
+    }
+    const label = B.flag ? (i+1) + (m.name ? " " + m.name : "") : (m.name || "-");
+    const tw = mx2.measureText(label).width;
+    const lx = x + (B.flag ? 11*dpr : 5*dpr);
+    if(lx < lastRight + 3*dpr) return;             // sin hueco: se dibuja solo la marca
+    lastRight = lx + tw + 6*dpr;
+    mx2.fillStyle = "rgba(14,15,18,.88)";
+    mx2.fillRect(lx, y0 + dpr, tw + 6*dpr, hh - 2*dpr);
+    mx2.fillStyle = B.text;
+    mx2.fillText(label, lx + 3*dpr, y0 + hh/2);
+  });
+}
+
+function drawMain(){
+  const w = mc.width, h = mc.height, v = S.view;
+  mx2.fillStyle = "#0e0f12"; mx2.fillRect(0,0,w,h);
+  mx2.fillStyle = "#131519"; mx2.fillRect(0, 0, w, RUL*dpr);
+  mx2.fillStyle = "#181b22"; mx2.fillRect(0, RUL*dpr, w, SEC*dpr);
+  mx2.fillStyle = "#141a18"; mx2.fillRect(0, (RUL+SEC)*dpr, w, CHO*dpr);
+  mx2.fillStyle = "#23262e";
+  mx2.fillRect(0, RUL*dpr, w, dpr);
+  mx2.fillRect(0, (RUL+SEC)*dpr, w, dpr);
+  mx2.fillRect(0, LANE*dpr - dpr, w, dpr);
+  if(!S.duration) return;
+
+  drawRuler(mx2, w, v, h);
+
+  const L = S.loop;
+  if(L.s !== null && L.e !== null){
+    const x0 = timeToX(L.s, w, v), x1 = timeToX(L.e, w, v);
+    mx2.fillStyle = L.on ? "rgba(255,196,0,.13)" : "rgba(255,196,0,.06)";
+    mx2.fillRect(x0, LANE*dpr, x1-x0, h);
+    mx2.fillStyle = L.on ? "#ffc400" : "#7a6420";
+    mx2.fillRect(x0-dpr, LANE*dpr, 2*dpr, h);
+    mx2.fillRect(x1-dpr, LANE*dpr, 2*dpr, h);
+  }
+
+  drawWave(mx2, w, h, v, LANE*dpr, ACC);
+
+  drawBand("cho", w, h, v);
+  drawBand("sec", w, h, v);
+
+  if(drag && drag.mode === "sel"){
+    const x0 = Math.min(drag.x0, drag.x1), x1 = Math.max(drag.x0, drag.x1);
+    mx2.fillStyle = ACC_SEL;
+    mx2.fillRect(x0*dpr, LANE*dpr, (x1-x0)*dpr, h);
+  }
+
+  const px = timeToX(audio.currentTime, w, v);
+  if(px >= 0 && px <= w){
+    mx2.fillStyle = "#ff5252";
+    mx2.fillRect(px - dpr/2, 0, Math.max(1, 1.6*dpr), h);
+  }
+}
+
+function drawOver(){
+  const w = oc.width, h = oc.height, v = {s:0, e:S.duration || 1};
+  ox2.fillStyle = "#111318"; ox2.fillRect(0,0,w,h);
+  if(!S.duration) return;
+  drawWave(ox2, w, h, v, 0, ACC_DIM);
+
+  const L = S.loop;
+  if(L.s !== null && L.e !== null){
+    ox2.fillStyle = "rgba(255,196,0,.18)";
+    const x0 = timeToX(L.s, w, v), x1 = timeToX(L.e, w, v);
+    ox2.fillRect(x0, 0, Math.max(dpr, x1-x0), h);
+  }
+  ox2.fillStyle = "rgba(61,220,151,.55)";
+  S.chords.forEach(m => ox2.fillRect(timeToX(m.t, w, v), h*0.6, dpr, h*0.4));
+  ox2.fillStyle = "#ffb300";
+  S.markers.forEach(m => ox2.fillRect(timeToX(m.t, w, v), 0, dpr, h));
+
+  const a = timeToX(S.view.s, w, v), b = timeToX(S.view.e, w, v);
+  ox2.fillStyle = "rgba(255,255,255,.07)";
+  ox2.fillRect(a, 0, b-a, h);
+  ox2.strokeStyle = "#8a90a0"; ox2.lineWidth = dpr;
+  ox2.strokeRect(a + dpr/2, dpr/2, Math.max(2*dpr, b-a-dpr), h-dpr);
+
+  ox2.fillStyle = "#ff5252";
+  ox2.fillRect(timeToX(audio.currentTime, w, v) - dpr/2, 0, Math.max(1, 1.6*dpr), h);
+}
+
+function draw(){ drawMain(); drawOver(); }
+
+/* ---------- transporte ---------- */
+
+function seek(t){
+  audio.currentTime = clamp(t, 0, S.duration || 0);
+  refresh(); draw();
+}
+function togglePlay(){
+  if(audio.paused) audio.play().catch(()=>{}); else audio.pause();
+}
+audio.addEventListener("play",  () => { $("play").textContent = "Pausa"; tick(); });
+audio.addEventListener("pause", () => { $("play").textContent = "Play"; draw(); });
+audio.addEventListener("ended", () => { $("play").textContent = "Play"; });
+
+function setRate(r){
+  r = clamp(r, 0.25, 1.5);
+  audio.playbackRate = r;
+  $("rate").value = r;
+  $("rateval").textContent = r.toFixed(2) + "x";
+  save();
+}
+function applyPitch(){
+  const v = $("pitch").checked;
+  audio.preservesPitch = v;
+  audio.mozPreservesPitch = v;
+  audio.webkitPreservesPitch = v;
+}
+
+function refresh(){
+  $("time").innerHTML = fmt(audio.currentTime) + ' <span>/ ' + fmt(S.duration) + '</span>';
+  const L = S.loop;
+  $("loopinfo").textContent = (L.s === null || L.e === null)
+    ? "sin seleccion"
+    : fmt(L.s) + " > " + fmt(L.e) + "  (" + (L.e - L.s).toFixed(2) + "s)";
+  $("loopbtn").classList.toggle("on", L.on);
+}
+
+function tick(){
+  if(audio.paused) return;
+  const L = S.loop;
+  if(L.on && L.s !== null && L.e !== null && L.e > L.s){
+    if(audio.currentTime >= L.e || audio.currentTime < L.s - 0.05) audio.currentTime = L.s;
+  }
+  if(S.follow) follow();
+  refresh();
+  draw();
+  requestAnimationFrame(tick);
+}
+function follow(){
+  const v = S.view, span = v.e - v.s, t = audio.currentTime;
+  if(span >= S.duration) return;
+  if(t < v.s + span*0.05 || t > v.s + span*0.85){
+    let s = clamp(t - span*0.4, 0, Math.max(0, S.duration - span));
+    S.view = {s, e:s + span};
+  }
+}
+
+/* ---------- zoom y pan ---------- */
+
+function setView(s, e){
+  let span = clamp(e - s, 0.02, S.duration || 1);
+  s = clamp(s, 0, Math.max(0, (S.duration||1) - span));
+  S.view = {s, e:s + span};
+  draw();
+}
+function zoomAt(t, factor){
+  const v = S.view, span = (v.e - v.s) * factor;
+  const frac = (t - v.s) / (v.e - v.s);
+  setView(t - span*frac, t - span*frac + span);
+}
+
+mc.addEventListener("wheel", e => {
+  if(!S.duration) return;
+  e.preventDefault();
+  const r = mc.getBoundingClientRect();
+  if(e.shiftKey){
+    const span = S.view.e - S.view.s;
+    const d = (e.deltaY || e.deltaX) / r.width * span;
+    setView(S.view.s + d, S.view.e + d);
+  }else{
+    zoomAt(xToTime(e.clientX - r.left, r.width, S.view), e.deltaY > 0 ? 1.2 : 1/1.2);
+  }
+}, {passive:false});
+
+/* ---------- interaccion con la onda ---------- */
+
+let drag = null;
+
+function nearestMarker(arr, t, tolT){
+  let best = -1, bd = Infinity;
+  arr.forEach((m, i) => {
+    const d = Math.abs(m.t - t);
+    if(d < bd){ bd = d; best = i; }
+  });
+  return bd <= tolT ? best : -1;
+}
+
+mc.addEventListener("mousedown", e => {
+  if(!S.duration) return;
+  const r = mc.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const t = xToTime(x, r.width, S.view);
+  const tolT = (S.view.e - S.view.s) * (8 / r.width);
+
+  const band = bandAt(y);
+  if(band){
+    const arr = S[BANDS[band].key];
+    const i = nearestMarker(arr, t, tolT);
+    if(i >= 0){
+      if(e.detail === 2){ loopSection(band, i); return; }
+      drag = {mode:"mk", band, m:arr[i], moved:false, x0:x};
+      return;
+    }
+  }
+  if(y < LANE) { seek(t); return; }                 // hueco de las bandas: seek directo
+  const L = S.loop;
+  if(L.s !== null && Math.abs(L.s - t) < tolT){ drag = {mode:"edge", edge:"s"}; return; }
+  if(L.e !== null && Math.abs(L.e - t) < tolT){ drag = {mode:"edge", edge:"e"}; return; }
+
+  drag = {mode:"maybe", x0:x, x1:x, t0:t};
+});
+
+window.addEventListener("mousemove", e => {
+  if(!drag) return;
+  const r = mc.getBoundingClientRect();
+  const x = clamp(e.clientX - r.left, 0, r.width);
+  const t = xToTime(x, r.width, S.view);
+  if(drag.mode === "mk"){
+    if(!drag.moved && Math.abs(x - drag.x0) <= 3) return;
+    drag.moved = true;
+    drag.m.t = clamp(t, 0, S.duration);
+    draw();
+    return;
+  }
+  if(drag.mode === "edge"){
+    S.loop[drag.edge] = clamp(t, 0, S.duration);
+    if(S.loop.s > S.loop.e){
+      const a = S.loop.s; S.loop.s = S.loop.e; S.loop.e = a;
+      drag.edge = drag.edge === "s" ? "e" : "s";
+    }
+    refresh(); draw(); save();
+    return;
+  }
+  drag.x1 = x;
+  if(drag.mode === "maybe" && Math.abs(drag.x1 - drag.x0) > 3) drag.mode = "sel";
+  if(drag.mode === "sel") draw();
+});
+
+window.addEventListener("mouseup", () => {
+  if(!drag) return;
+  const d = drag; drag = null;
+  const r = mc.getBoundingClientRect();
+  if(d.mode === "mk"){
+    if(d.moved){
+      S[BANDS[d.band].key].sort((a,b) => a.t - b.t);
+      renderAll(); draw(); save();
+    }else{
+      seek(d.m.t);
+    }
+    return;
+  }
+  if(d.mode === "maybe"){ seek(d.t0); return; }
+  if(d.mode === "sel"){
+    const t0 = xToTime(Math.min(d.x0, d.x1), r.width, S.view);
+    const t1 = xToTime(Math.max(d.x0, d.x1), r.width, S.view);
+    S.loop = {on:true, s:clamp(t0,0,S.duration), e:clamp(t1,0,S.duration)};
+    seek(S.loop.s);
+    if(audio.paused) audio.play().catch(()=>{});
+    save();
+  }
+  refresh(); draw();
+});
+
+// cursor: indica cuando se puede agarrar un marcador o un borde del loop
+mc.addEventListener("mousemove", e => {
+  if(drag || !S.duration) return;
+  const r = mc.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const t = xToTime(x, r.width, S.view);
+  const tolT = (S.view.e - S.view.s) * (8 / r.width);
+  const L = S.loop;
+  const onEdge = L.s !== null && L.e !== null &&
+    (Math.abs(L.s - t) < tolT || Math.abs(L.e - t) < tolT);
+  const band = bandAt(y);
+  const onMark = band && nearestMarker(S[BANDS[band].key], t, tolT) >= 0;
+  mc.style.cursor = (onMark || onEdge) ? "ew-resize" : "crosshair";
+});
+
+// overview: click y arrastre para mover la vista
+let odrag = false;
+function overSeek(e){
+  if(!S.duration) return;
+  const r = oc.getBoundingClientRect();
+  const t = ((e.clientX - r.left) / r.width) * S.duration;
+  const span = S.view.e - S.view.s;
+  if(span >= S.duration) seek(t);
+  else setView(t - span/2, t + span/2);
+}
+oc.addEventListener("mousedown", e => { odrag = true; overSeek(e); });
+window.addEventListener("mousemove", e => { if(odrag) overSeek(e); });
+window.addEventListener("mouseup", () => { odrag = false; });
+
+/* ---------- marcadores ---------- */
+
+function addMarker(band, t){
+  const B = BANDS[band], arr = S[B.key];
+  const m = {t: t !== undefined ? t : audio.currentTime, name:""};
+  arr.push(m);
+  arr.sort((a,b) => a.t - b.t);
+  renderAll(); draw(); save();
+  const inp = $(B.list).querySelectorAll("input")[arr.indexOf(m)];
+  if(inp) inp.focus();
+}
+function delMarker(band, i){
+  S[BANDS[band].key].splice(i, 1);
+  renderAll(); draw(); save();
+}
+// loop desde este marcador hasta el siguiente de su misma banda
+function loopSection(band, i){
+  const arr = S[BANDS[band].key], m = arr[i];
+  if(!m) return;
+  const next = arr[i+1];
+  S.loop = {on:true, s:m.t, e: next ? next.t : S.duration};
+  seek(m.t);
+  refresh(); draw(); save();
+  if(audio.paused) audio.play().catch(()=>{});
+}
+
+function renderList(band){
+  const B = BANDS[band], arr = S[B.key], box = $(B.list);
+  box.innerHTML = "";
+  if(!arr.length){
+    box.innerHTML = '<div class="empty">' + B.empty + '</div>';
+    return;
+  }
+  arr.forEach((m, i) => {
+    const row = document.createElement("div");
+    row.className = "mk";
+
+    const n = document.createElement("span");
+    n.className = "n";
+    n.textContent = B.flag ? (i+1) : "";
+
+    const t = document.createElement("span");
+    t.className = "t"; t.textContent = fmt(m.t).slice(0,-2);
+    t.style.color = B.fill;
+    t.title = "Ir a " + fmt(m.t);
+    t.onclick = () => seek(m.t);
+
+    const inp = document.createElement("input");
+    inp.value = m.name;
+    inp.placeholder = B.ph;
+    inp.oninput = () => { m.name = inp.value; draw(); save(); };
+
+    const lp = document.createElement("button");
+    lp.textContent = "loop"; lp.title = "Loop hasta el siguiente";
+    lp.onclick = () => loopSection(band, i);
+
+    const rm = document.createElement("button");
+    rm.textContent = "x"; rm.title = "Borrar";
+    rm.onclick = () => delMarker(band, i);
+
+    row.append(n, t, inp, lp, rm);
+    box.appendChild(row);
+  });
+}
+function renderAll(){ renderList("sec"); renderList("cho"); }
+
+/* ---------- loop ---------- */
+
+function setLoopEdge(which){
+  const t = audio.currentTime;
+  if(which === "s"){
+    S.loop.s = t;
+    if(S.loop.e === null || S.loop.e <= t) S.loop.e = Math.min(S.duration, t + 4);
+  }else{
+    S.loop.e = t;
+    if(S.loop.s === null || S.loop.s >= t) S.loop.s = Math.max(0, t - 4);
+  }
+  S.loop.on = true;
+  refresh(); draw(); save();
+}
+function nudge(which, d){
+  if(S.loop[which] === null || S.loop[which] === undefined) return;
+  S.loop[which] = clamp(S.loop[which] + d, 0, S.duration);
+  if(S.loop.s >= S.loop.e){
+    if(which === "s") S.loop.s = S.loop.e - 0.02; else S.loop.e = S.loop.s + 0.02;
+  }
+  refresh(); draw(); save();
+}
+function toggleLoop(){
+  if(S.loop.s === null || S.loop.e === null) return;
+  S.loop.on = !S.loop.on;
+  refresh(); draw(); save();
+}
+
+/* ---------- teclado ---------- */
+
+window.addEventListener("keydown", e => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if(tag === "input" || tag === "textarea"){
+    if(e.key === "Enter" || e.key === "Escape") e.target.blur();
+    return;
+  }
+  if(e.ctrlKey || e.metaKey) return;
+  const k = e.key;
+  if(k === " "){ e.preventDefault(); togglePlay(); return; }
+  if(k === "?" || k === "h" || k === "H"){ e.preventDefault(); helpToggle(); return; }
+  if(k === "Escape"){ helpHide(); return; }
+  if(!S.duration) return;
+
+  if(k === "ArrowLeft" || k === "ArrowRight"){
+    e.preventDefault();
+    const d = e.altKey ? 0.1 : e.shiftKey ? 1 : 5;
+    seek(audio.currentTime + (k === "ArrowRight" ? d : -d));
+    return;
+  }
+  if(k === "ArrowUp"){   e.preventDefault(); zoomAt(audio.currentTime, 1/1.4); return; }
+  if(k === "ArrowDown"){ e.preventDefault(); zoomAt(audio.currentTime, 1.4);   return; }
+  if(k === "0"){ setView(0, S.duration); return; }
+  if(k === "Home"){ seek(S.loop.on && S.loop.s !== null ? S.loop.s : 0); return; }
+  if(k === "k" || k === "K"){ e.preventDefault(); togglePlay(); return; }
+  if(k === "j" || k === "J" || k === "l" || k === "L"){
+    const d = e.altKey ? 0.1 : e.shiftKey ? 1 : 5;
+    seek(audio.currentTime + ((k === "l" || k === "L") ? d : -d));
+    return;
+  }
+  // preventDefault: si no, el mismo evento escribe la letra en el input recien enfocado
+  if(k === "m" || k === "M"){ e.preventDefault(); addMarker("sec"); return; }
+  if(k === "c" || k === "C"){ e.preventDefault(); addMarker("cho"); return; }
+  if(k === "i" || k === "I"){ setLoopEdge("s"); return; }
+  if(k === "o" || k === "O"){ setLoopEdge("e"); return; }
+  if(k === "r" || k === "R"){ toggleLoop(); return; }
+  if(k === "f" || k === "F"){
+    S.follow = !S.follow;
+    setStatus(S.follow ? "" : "seguimiento desactivado");
+    return;
+  }
+  if(k === ","){ nudge("s", -0.02); return; }
+  if(k === "."){ nudge("s",  0.02); return; }
+  if(k === "<"){ nudge("e", -0.02); return; }
+  if(k === ">"){ nudge("e",  0.02); return; }
+  if(k === "+" || k === "="){ setRate(audio.playbackRate + 0.05); return; }
+  if(k === "-" || k === "_"){ setRate(audio.playbackRate - 0.05); return; }
+  if(k >= "1" && k <= "9"){
+    const m = S.markers[+k - 1];
+    if(m) seek(m.t);
+  }
+});
+
+/* ---------- controles ---------- */
+
+$("play").onclick = togglePlay;
+$("home").onclick = () => seek(0);
+$("loopbtn").onclick = toggleLoop;
+$("loopclr").onclick = () => { S.loop = {on:false, s:null, e:null}; refresh(); draw(); save(); };
+/* ---------- ayuda flotante sobre la onda ---------- */
+
+let hintT = null;
+function hintShow(){
+  $("hint").classList.remove("off");
+  clearTimeout(hintT);
+  hintT = setTimeout(hintHide, 6000);
+}
+function hintHide(){ clearTimeout(hintT); $("hint").classList.add("off"); }
+
+// se va sola a la primera interaccion con la onda
+["mousedown","wheel"].forEach(ev => mc.addEventListener(ev, hintHide, {passive:true}));
+
+function helpShow(){ $("help").classList.remove("off"); hintHide(); }
+function helpHide(){ $("help").classList.add("off"); }
+function helpToggle(){
+  $("help").classList.contains("off") ? helpShow() : helpHide();
+}
+$("hintbtn").onclick = helpToggle;
+$("helpclose").onclick = helpHide;
+// click en el fondo cierra; dentro del panel no
+$("help").onclick = e => { if(e.target === $("help")) helpHide(); };
+
+$("accent").oninput = e => setAccent(e.target.value);
+$("addmk").onclick = () => addMarker("sec");
+$("addch").onclick = () => addMarker("cho");
+$("rate").oninput = e => setRate(+e.target.value);
+document.querySelectorAll(".preset").forEach(b => b.onclick = () => setRate(+b.dataset.r));
+$("pitch").onchange = () => { applyPitch(); save(); };
+$("vol").oninput = e => { audio.volume = +e.target.value; };
+$("close").onclick = () => {
+  audio.pause();
+  $("app").classList.remove("show");
+  $("drop").classList.remove("hide");
+};
+
+/* ---------- drag & drop ---------- */
+
+const dz = $("drop");
+dz.onclick = () => $("file").click();
+$("file").onchange = e => load(e.target.files[0]);
+
+["dragenter","dragover"].forEach(ev =>
+  window.addEventListener(ev, e => { e.preventDefault(); dz.classList.add("over"); }));
+window.addEventListener("dragleave", e => { if(e.target === dz) dz.classList.remove("over"); });
+window.addEventListener("drop", e => {
+  e.preventDefault();
+  dz.classList.remove("over");
+  const f = e.dataTransfer && e.dataTransfer.files[0];
+  if(f) load(f);
+});
+
+audio.addEventListener("timeupdate", () => { if(audio.paused) refresh(); });
+
+// el acento es preferencia global, no va por archivo
+let savedAcc = null;
+try{ savedAcc = localStorage.getItem("transcript:accent"); }catch(e){}
+setAccent(savedAcc || "#4a9eff", false);
+
+applyPitch();
+renderAll();
+refresh();
+</script>
+</body>
+</html>
