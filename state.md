@@ -24,6 +24,10 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 ## Estado y pendientes
 
 - Funcional. Confirmado por mykl el 2026-08-25.
+- Publicado el 2026-08-25 en https://github.com/memoriainfinita/aures. Repo publico, rama `main`.
+- GitHub Pages sirviendo desde la raiz de `main`: https://memoriainfinita.github.io/aures/. Sin workflow ni build; cada push actualiza la app. La primera construccion tardo 230 s en responder.
+- Comprobado el 2026-08-25: el HTML que sirve Pages es identico byte a byte al local, y la build quedo en estado `built` sin errores.
+- La carpeta local se llama `transcript` y el repo `aures`. No se renombro para no romper el directorio de trabajo a mitad de la publicacion. Renombrarla no afecta a git ni al remoto.
 - Verificacion hecha: `node --check` sobre el script extraido del HTML, y prueba en node de las funciones de color (`mix`, `rgba`).
 - Verificacion NO hecha: prueba en navegador desde Claude Code. La extension de Chrome no conectaba en toda la sesion ("Browser extension is not connected"). Las pruebas de comportamiento las hizo mykl a mano.
 - `1..9` salta solo a secciones, no a acordes. Planteado a mykl, sin decidir.
