@@ -51,10 +51,10 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Verificacion hecha: `node --check` sobre el script extraido del HTML, `node tools/tempo.test.mjs` con 26 aserciones en verde, y prueba en node de las funciones de color (`mix`, `rgba`).
 - La rejilla, el tap y la ocultacion de bandas: probados a mano por mykl el 2026-08-30, funcionan.
 - Pruebas de comportamiento hechas a mano por mykl. La extension de Chrome no conectaba, ni el 2026-08-25 ni el 2026-08-30.
-- Publicado el 2026-08-30: `bd2aa4e..ec4fde8` empujado a `main`. Pages reconstruye sola en cada push.
+- Publicado el 2026-08-30: `bd2aa4e..ec4fde8` empujado a `main`. Pages reconstruye sola en cada push. Comprobado ese dia: el HTML servido pesa lo mismo que el local, 56201 bytes, y contiene los centinelas y `laneLayout`.
+- `screenshot.png` rehecha por mykl el 2026-08-30 contra `demo.mp3`, 1920x936: tres anclajes de tempo (120, 60, 120), la rejilla cambiando de paso en cada uno, la numeracion de compases siguiendo a traves de los tramos, y un loop activo.
 
 ## Pendientes
 
-- Rehacer `screenshot.png` contra `demo.mp3`, con la banda de tempo y la rejilla visibles. El texto alternativo del README ya las nombra, asi que hasta que se rehaga el README describe algo que la imagen no muestra. La captura la hace mykl: la extension de Chrome no conecta en esta maquina.
 - Fuera de alcance por decision, no por olvido: compensacion de latencia del tap, deteccion automatica de tempo a partir del audio, denominador de la cifra de compas, e imantado de marcadores a la rejilla.
 - Descartados el 2026-08-30, no volver sobre ellos sin motivo nuevo: heredar el nombre del acorde anterior al crear uno, y exportar el cifrado como texto.
