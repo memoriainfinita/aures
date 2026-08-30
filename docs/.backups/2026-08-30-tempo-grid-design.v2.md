@@ -16,11 +16,8 @@ S.tempo = [ {t, bpm, beats}, ... ]   // ordenado por t
 - Linea de compas cada `beats` pulsos. `beats` se declara por anclaje, por defecto 4.
 - Antes del primer anclaje no se dibuja rejilla.
 - En un cambio de tramo el compas se corta donde este. El anclaje nuevo reinicia el compas 1. No se cuadra el compas partido.
-- Crear un anclaje dentro de un tramo lo parte: el tramo anterior termina donde empieza el nuevo.
 
 El desfase de la intro no es un parametro: es la posicion del anclaje. Mover el anclaje desplaza toda la rejilla de su tramo.
-
-`beats` es el numerador de la cifra de compas. No hay denominador: no cambia donde caen las lineas, que es lo unico que este modelo dibuja. Por eso la etiqueta de un anclaje es `128 · 4` y nunca `128 · 4/4`, que prometeria una informacion que el modelo no tiene.
 
 ### Rangos y validacion
 
@@ -31,8 +28,6 @@ El desfase de la intro no es un parametro: es la posicion del anclaje. Mover el 
 | `t` | 0 a `duration` | se recorta al limite |
 
 Un valor no numerico en un campo de la lista deja el anclaje como estaba.
-
-`x2` y `/2` son la excepcion al recorte: si el resultado cae fuera de 30 a 300 no se aplica nada y se avisa en la barra de estado. Recortar 200 x2 a 300 daria un tempo que nadie ha pedido y que ademas parece correcto.
 
 El array se mantiene ordenado por `t`, como `markers` y `chords`. Dos anclajes pueden compartir `t`; el que quede segundo tras ordenar gobierna un tramo de duracion cero y no dibuja nada. No se impide.
 
@@ -46,12 +41,11 @@ Tecla `T`, usando `audio.currentTime` en el momento de la pulsacion. Verificado 
 
 La serie se corta tras 3 s sin golpes; el siguiente `T` abre un anclaje nuevo.
 
-- Golpe 1: crea el anclaje en ese instante, heredando `bpm` y `beats` del tramo anterior, o 120 y 4 si no hay ninguno.
+- Golpe 1: crea el anclaje en ese instante, con el BPM del tramo anterior, o 120 si no hay ninguno.
 - Golpe 2 en adelante: `bpm = 60*(n-1)/(ultimo - primero)`. Se usan primero y ultimo, no el promedio de intervalos consecutivos, porque asi el error de la mano no se acumula: cuanto mas golpes, mas exacto.
 - La rejilla se redibuja durante la serie.
 - Barra de estado durante la serie: `tap 6 · 128.4 BPM`.
-- Un golpe que deje el BPM fuera de 30 a 300 se ignora y no altera el anclaje. Cubre el caso de golpear con el audio parado, donde `audio.currentTime` no avanza y el intervalo seria cero, y el de rebobinar a mitad de serie, donde saldria negativo.
-- Crear un anclaje **no** pone el foco en ningun campo, al reves que `addMarker`, que enfoca el input del nombre. Con el foco dentro de un input el segundo `T` escribiria la letra en el campo y la serie se perderia.
+- Un golpe que deje el BPM fuera de 30 a 300 se ignora y no altera el anclaje. Cubre el caso de golpear con el audio parado, donde `audio.currentTime` no avanza y el intervalo seria cero.
 
 `audio.currentTime` corre en tiempo del medio, no de reloj: con la velocidad a 0.5x el BPM derivado sigue siendo el de la cancion y no hay que corregirlo.
 
@@ -60,13 +54,15 @@ No se compensa la latencia entre lo que se oye y la llegada de la tecla. El ancl
 Ajuste fino sobre un anclaje existente:
 
 - Arrastre en la banda de tempo: mueve `t`, no toca el BPM. Reutiliza el camino de `drag` de los marcadores con una variante propia: estado previo guardado en `pendingUndo` al `mousedown`, apilado en `mouseup` solo si hubo movimiento, `clamp` a `0..duration` y reordenacion del array.
-- Doble click sobre un anclaje: loop desde ese anclaje hasta el siguiente, o hasta el final.
+- Doble click sobre un anclaje: loop desde ese anclaje hasta el siguiente, o hasta el final. Es lo que ya hace `loopSection` sobre las otras bandas y cae por el mismo `e.detail === 2`.
 - Click en la banda de tempo lejos de todo anclaje: seek, como en el resto de bandas. La banda no crea anclajes con el raton; se crean con `T`.
-- Lista lateral: campo de BPM, campo de pulsos por compas, botones `x2` y `/2`, boton de borrar. El borrado apila un paso de deshacer, como `delMarker`. `x2` y `/2` estan porque golpear a mitad de tiempo es lo normal.
+- Lista lateral: campo de BPM, campo de pulsos por compas, botones `x2` y `/2`, boton de borrar. El borrado apila un paso de deshacer, como `delMarker`.
+
+`x2` y `/2` estan porque golpear a mitad de tiempo es lo normal.
 
 ## Dibujo
 
-Cuarta banda `TMP = 14 px` entre la regla de tiempo y la de secciones. `LANE = RUL + TMP + SEC + CHO`. Coste: 14 px permanentes de altura de onda.
+Cuarta banda `TMP = 14 px` entre la regla de tiempo y la de secciones. `LANE = RUL + TMP + SEC + CHO`. `bandAt()` gana un caso. Coste: 14 px permanentes de altura de onda.
 
 `drawGrid()` se dibuja despues del fondo y antes de la onda, solo por debajo de `LANE`:
 
@@ -79,30 +75,19 @@ Si el compas baja de ~4 px no se dibuja nada de ese tramo. No se usa el color de
 
 Se itera solo sobre el rango visible, empezando en el primer pulso posterior a `view.s`, como ya hace `drawRuler`. La rejilla no se dibuja en el lienzo de vista general.
 
-`drawRuler()` deja de dibujar su linea larga sobre la onda en los tramos que tienen rejilla, y conserva la marca corta dentro de su franja. Sin esto se acumulan tres familias de lineas verticales sobre la onda: la de la regla, las guias de los marcadores y la rejilla.
+En la banda de tempo, cada anclaje: marca vertical y etiqueta `128 · 4/4`, con la misma reserva de hueco que ya usan las otras bandas. Numero de compas dibujado en la banda cuando quepa.
 
-En la banda de tempo, cada anclaje: marca vertical y etiqueta `128 · 4`, con la misma reserva de hueco que ya usan las otras bandas. Numero de compas dibujado en la banda cuando quepa.
-
-### Lo que no se puede reutilizar
-
-`drawBand()` y `renderList()` asumen la forma de `BANDS`, con un unico campo de nombre por elemento. La banda de tempo lleva `drawTempoBand()` y `renderTempoList()` propias, y `BANDS` no cambia.
-
-Consecuencia: `bandAt()` devuelve `"tmp"` para la franja nueva, y hay tres sitios que hoy hacen `S[BANDS[band].key]` en cuanto `bandAt()` devuelve algo. Con `"tmp"` ese acceso es `undefined` y revienta. Los tres necesitan una rama explicita de tempo **antes** del acceso a `BANDS`:
-
-- el `mousedown` del lienzo principal
-- el `mousemove` que decide el cursor
-- `loopSection()`, que recibe `band` y resuelve `BANDS[band].key`; el loop de un tramo va en su propia funcion
+La banda de tempo no reutiliza `drawBand()` ni `renderList()`: ambas asumen la forma de `BANDS`, con un unico campo de nombre por elemento. La banda lleva `drawTempoBand()` y `renderTempoList()` propias. `BANDS` no cambia; `bandAt()` devuelve `"tmp"` para la franja nueva y quien consume `bandAt()` ignora ese caso salvo el codigo de tempo.
 
 ## HTML e interfaz
 
-- Contenedor nuevo en el panel lateral para la lista de anclajes, con su titulo, junto a los de secciones y acordes. Entra en la regla `min-height:44px` que hoy comparten `#mlist` y `#clist`, y el panel pasa a repartir su alto entre tres listas en vez de dos.
+- Contenedor nuevo en el panel lateral para la lista de anclajes, con su titulo, junto a los de secciones y acordes.
 - Modal de atajos: entrada para `T`.
 - README: la rejilla entra en la descripcion de funciones. La captura se rehace contra `demo.mp3` si la banda nueva cambia lo que se ve.
 
 ## Datos, deshacer, verificacion
 
 - `snapshot()` anade `tempo: S.tempo`. `applyData()` lo lee con el mismo `Array.isArray` que `markers`.
-- `load()` resetea `S.tempo` a `[]` en la misma linea en que hoy resetea `markers`, `chords` y `loop`. Sin eso la rejilla de la cancion anterior sobrevive a abrir otra.
 - Un `.aures.json` anterior carga sin rejilla. Uno nuevo abierto en una version anterior ignora el campo. Sin migracion.
 - Todo cambio de tempo llama a `save()`, igual que los marcadores.
 - `markerState()` pasa a `{markers, chords, tempo}`: `Ctrl+Z` deshace tambien los anclajes. Cambia la decision registrada el 2026-08-30 de limitar el deshacer a marcadores. Motivo: aquella excluia loop, velocidad y acento por ser estado de transporte, y un anclaje es anotacion estructural, del mismo tipo que un marcador.
@@ -114,4 +99,3 @@ Consecuencia: `bandAt()` devuelve `"tmp"` para la franja nueva, y hay tres sitio
 - Imantado de marcadores a la rejilla. Decidido el 2026-08-30: la rejilla es guia visual y no toca `addMarker` ni el arrastre de marcadores.
 - Compensacion de latencia del tap.
 - Deteccion automatica de tempo a partir del audio.
-- Denominador de la cifra de compas.
