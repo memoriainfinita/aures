@@ -687,7 +687,7 @@ function drawWave(ctx, w, h, v, top, color){
   }
 }
 
-function drawRuler(ctx, w, v, h){
+function drawRuler(ctx, w, v, h, spans){
   const span = v.e - v.s;
   if(span <= 0) return;
   const steps = [0.05,0.1,0.25,0.5,1,2,5,10,15,30,60,120,300];
@@ -703,7 +703,9 @@ function drawRuler(ctx, w, v, h){
     const x = Math.round(timeToX(t, w, v)) + .5;
     // short tick in the ruler lane, long line over the waveform
     ctx.beginPath(); ctx.moveTo(x, (RUL-4)*dpr); ctx.lineTo(x, RUL*dpr); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x, LANE*dpr);    ctx.lineTo(x, h);       ctx.stroke();
+    if(!coveredBy(spans, t)){
+      ctx.beginPath(); ctx.moveTo(x, LANE*dpr); ctx.lineTo(x, h); ctx.stroke();
+    }
     ctx.fillText(st < 1 ? t.toFixed(2) : fmtShort(t), x + 4*dpr, (RUL - 3)*dpr);
   }
 }
@@ -744,6 +746,74 @@ function drawBand(name, w, h, v){
   });
 }
 
+// spans that will actually draw a grid at this zoom. computed once per frame:
+// the ruler needs the same list to know where to stay out of the way
+function visibleSpans(v){
+  const out = [];
+  if(!S.tempo.length || !S.duration) return out;
+  const w = mc.width;
+  for(const sp of tempoSpans(S.tempo, S.duration)){
+    if(sp.e <= v.s || sp.t >= v.e || sp.e <= sp.t) continue;
+    const barPx = ((60 / sp.bpm) * sp.beats / (v.e - v.s)) * w;
+    if(barPx < 4*dpr) continue;                    // too dense to mean anything
+    sp.barPx = barPx;
+    out.push(sp);
+  }
+  return out;
+}
+
+function coveredBy(spans, t){
+  for(const s of spans) if(t >= s.t && t <= s.e) return true;
+  return false;
+}
+
+// bar and beat lines, under the waveform. never the accent colour: that is the cursor
+function drawGrid(w, h, v, spans){
+  for(const sp of spans){
+    const showBeats = (sp.barPx / sp.beats) >= 6*dpr;
+    const showNums  = sp.barPx >= 40*dpr;
+    for(const b of beatTimes(sp, v.s, v.e)){
+      if(!b.downbeat && !showBeats) continue;
+      const x = Math.round(timeToX(b.t, w, v));
+      mx2.fillStyle = b.downbeat ? "#3c4658" : "#2a3140";
+      mx2.fillRect(x, LANE*dpr, dpr, h - LANE*dpr);
+      if(b.downbeat && showNums){
+        mx2.fillStyle = "#59627a";
+        mx2.font = (9*dpr) + "px ui-monospace,monospace";
+        mx2.textBaseline = "middle";
+        mx2.fillText(b.bar, x + 3*dpr, (RUL + TMP/2)*dpr);
+      }
+    }
+  }
+}
+
+// the anchors themselves, over the bar numbers, with the same gap reservation
+// the other lanes use
+function drawTempoBand(w, h, v){
+  if(!S.tempo.length) return;
+  const y0 = RUL*dpr, y1 = (RUL+TMP)*dpr, hh = y1 - y0;
+  mx2.font = (10*dpr) + "px ui-sans-serif,system-ui,sans-serif";
+  mx2.textBaseline = "middle";
+  let lastRight = -1e9;
+  for(const a of S.tempo){
+    const x = timeToX(a.t, w, v);
+    if(x < -80*dpr || x > w + 80*dpr) continue;
+    mx2.fillStyle = "#8ea2c6";
+    mx2.fillRect(x, y0, 2*dpr, hh);
+    mx2.fillStyle = "rgba(142,162,198,.22)";
+    mx2.fillRect(x, LANE*dpr, dpr, h - LANE*dpr);
+    const label = Math.round(a.bpm) + " · " + a.beats;
+    const tw = mx2.measureText(label).width;
+    const lx = x + 5*dpr;
+    if(lx < lastRight + 3*dpr) continue;           // no gap: only the tick is drawn
+    lastRight = lx + tw + 6*dpr;
+    mx2.fillStyle = "rgba(14,15,18,.88)";
+    mx2.fillRect(lx, y0 + dpr, tw + 6*dpr, hh - 2*dpr);
+    mx2.fillStyle = "#b9c8e0";
+    mx2.fillText(label, lx + 3*dpr, y0 + hh/2);
+  }
+}
+
 function drawMain(){
   const w = mc.width, h = mc.height, v = S.view;
   mx2.fillStyle = "#0e0f12"; mx2.fillRect(0,0,w,h);
@@ -758,7 +828,9 @@ function drawMain(){
   mx2.fillRect(0, LANE*dpr - dpr, w, dpr);
   if(!S.duration) return;
 
-  drawRuler(mx2, w, v, h);
+  const spans = visibleSpans(v);
+  drawRuler(mx2, w, v, h, spans);
+  drawGrid(w, h, v, spans);
 
   const L = S.loop;
   if(L.s !== null && L.e !== null){
@@ -772,6 +844,7 @@ function drawMain(){
 
   drawWave(mx2, w, h, v, LANE*dpr, ACC);
 
+  drawTempoBand(w, h, v);
   drawBand("cho", w, h, v);
   drawBand("sec", w, h, v);
 
