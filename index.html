@@ -323,6 +323,7 @@ async function load(file){
   if(S.url) URL.revokeObjectURL(S.url);
   S.peaks = null; S.nPeaks = 0;
   S.markers = []; S.chords = []; S.tempo = []; S.loop = {on:false, s:null, e:null};
+  taps = []; tapAnchor = null;
   S.name = file.name;
   S.size = file.size;
   S.url = URL.createObjectURL(file);
@@ -1123,6 +1124,56 @@ function loopSection(band, i){
   if(audio.paused) audio.play().catch(()=>{});
 }
 
+/* ---------- tempo ---------- */
+
+// the anchor governing this instant, to inherit its bpm and beats
+function spanAt(t){
+  let out = null;
+  for(const a of S.tempo) if(a.t <= t && (!out || a.t > out.t)) out = a;
+  return out;
+}
+
+// a series is a run of taps. it closes after 3 s without one, by wall clock and
+// not by audio time: with the audio paused currentTime never advances and the
+// series would never expire
+let taps = [], tapAnchor = null, tapWall = 0;
+const TAP_GAP = 3000;
+
+// a series dies of old age, and also when its anchor is gone: an undo, an
+// import or another audio replace S.tempo wholesale and leave tapAnchor
+// pointing at a detached object that no drawing would ever see again
+function seriesAlive(){
+  return taps.length > 0 &&
+         performance.now() - tapWall <= TAP_GAP &&
+         S.tempo.includes(tapAnchor);
+}
+
+function tap(){
+  const now = audio.currentTime;
+  if(!seriesAlive()){ taps = []; tapAnchor = null; }
+  tapWall = performance.now();
+
+  if(!taps.length){
+    const prev = spanAt(now);
+    pushUndo();                                    // one step for the whole series
+    tapAnchor = {t: now, bpm: prev ? prev.bpm : 120, beats: prev ? prev.beats : 4};
+    S.tempo.push(tapAnchor);
+    S.tempo.sort((a, b) => a.t - b.t);
+    taps = [now];
+    renderTempoList(); draw(); save();
+    setStatus("tap 1 · " + Math.round(tapAnchor.bpm) + " BPM");
+    return;
+  }
+
+  const next = taps.concat([now]);
+  const bpm = bpmFromTaps(next);
+  if(bpm === null) return;                         // worthless tap: dropped, anchor untouched
+  taps = next;
+  tapAnchor.bpm = bpm;
+  renderTempoList(); draw(); save();
+  setStatus("tap " + taps.length + " · " + bpm.toFixed(1) + " BPM");
+}
+
 function renderList(band){
   const B = BANDS[band], arr = S[B.key], box = $(B.list);
   box.innerHTML = "";
@@ -1162,6 +1213,7 @@ function renderList(band){
   });
 }
 function renderAll(){ renderList("sec"); renderList("cho"); }
+function renderTempoList(){}                       // filled in with the side panel
 
 /* ---------- loop ---------- */
 
@@ -1229,6 +1281,7 @@ window.addEventListener("keydown", e => {
   // preventDefault: otherwise the same event types the letter into the just-focused input
   if(k === "m" || k === "M"){ e.preventDefault(); addMarker("sec"); return; }
   if(k === "c" || k === "C"){ e.preventDefault(); addMarker("cho"); return; }
+  if(k === "t" || k === "T"){ e.preventDefault(); tap(); return; }
   if(k === "i" || k === "I"){ setLoopEdge("s"); return; }
   if(k === "o" || k === "O"){ setLoopEdge("e"); return; }
   if(k === "r" || k === "R"){ toggleLoop(); return; }
