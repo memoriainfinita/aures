@@ -4,7 +4,7 @@ Transcribe songs by ear. One self-contained HTML file: no server, no build step,
 
 **[Open it](https://memoriainfinita.github.io/aures/)** and drop an audio file on the page.
 
-![aures with a track loaded: waveform, section and chord lanes, and an active loop](screenshot.png)
+![aures with a track loaded: waveform, tempo, section and chord lanes, a bar grid and an active loop](screenshot.png)
 
 No audio at hand? [`demo.mp3`](demo.mp3) is a 40-second synthetic track with four clearly different sections, made for trying the app out.
 
@@ -17,7 +17,8 @@ Your audio never leaves your machine. The file is read locally by the browser an
 - **Waveform** with wheel zoom, shift+wheel pan, and an overview strip showing where you are in the song
 - **Loop** any region by dragging over the waveform; drag the edges to adjust, or nudge them in 20 ms steps from the keyboard
 - **Section markers** and **chord markers** in separate lanes, each named, draggable, and saved
-- **Undo and redo** for markers, so a mistaken delete costs one `Ctrl+Z` rather than an evening
+- **Bar grid** from a tempo you tap in with `T`: drag its anchor to line the grid up with a song whose intro does not start on beat one, and drop further anchors wherever the song changes tempo or metre. It is a guide to read against, never a magnet: your markers stay where you put them
+- **Undo and redo** for markers and tempo anchors, so a mistaken delete costs one `Ctrl+Z` rather than an evening
 - **Speed** from 0.25x to 1.5x with pitch preserved, so a passage slowed down stays in tune
 - **Per-file memory**: reopen the same audio and its markers, loop and speed come back automatically
 
@@ -32,6 +33,7 @@ Double-click any marker to loop from there to the next one — the fastest way t
 | `up` / `down` | zoom in / out, `0` fit whole song |
 | `M` | add section marker |
 | `C` | add chord marker |
+| `T` | tap the beat to set the tempo |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | undo / redo |
 | `I` / `O` | set loop in / out |
 | `R` | loop on / off |
