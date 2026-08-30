@@ -38,3 +38,8 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Comprobado el 2026-08-25: el HTML que sirve Pages es identico byte a byte al local, y la build quedo en estado `built` sin errores.
 - Verificacion hecha: `node --check` sobre el script extraido del HTML, y prueba en node de las funciones de color (`mix`, `rgba`).
 - Pruebas de comportamiento hechas a mano por mykl. La extension de Chrome no conectaba, ni el 2026-08-25 ni el 2026-08-30.
+
+## Pendientes
+
+- Rejilla de compases con tap tempo: marcar el pulso con una tecla, deducir el tempo y dibujar lineas de compas a las que se peguen los marcadores. Es lo que mas cambiaria la app para transcribir y tambien, con diferencia, lo mas caro. Planteado y aplazado el 2026-08-30.
+- Descartados el mismo dia, no volver sobre ellos sin motivo nuevo: heredar el nombre del acorde anterior al crear uno, y exportar el cifrado como texto.
