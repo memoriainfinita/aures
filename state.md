@@ -27,8 +27,20 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Guardar y cargar por archivo `.aures.json`, uno por cancion, arrastrable sobre la ventana igual que el audio. Decidido el 2026-08-30 porque localStorage no cruza de maquina.
 - El documento importado se valida contra `size` y `duration` del audio abierto, con 0.05 s de tolerancia, nunca contra el nombre: renombrar el mp3 no debe romper la correspondencia. Si no coinciden, no se importa nada y se avisa en la barra de estado.
 - `snapshot()` y `applyData()` compartidos por localStorage y por el archivo: un solo formato de datos, no dos.
-- Deshacer y rehacer solo de marcadores, pila de 50 instantaneas de `{markers, chords}`. Decidido el 2026-08-30. El loop, la velocidad y el acento quedan fuera a proposito: incluirlos haria `Ctrl+Z` impredecible a mitad de transcripcion, deshaciendo un arrastre de loop cuando lo que se quiere deshacer es un borrado. Sin boton: `Ctrl+Z`, `Ctrl+Shift+Z` y tambien `Ctrl+Y`.
+- Deshacer y rehacer de anotacion estructural, pila de 50 instantaneas de `{markers, chords, tempo}`. El loop, la velocidad, el acento y las bandas visibles quedan fuera a proposito: incluirlos haria `Ctrl+Z` impredecible a mitad de transcripcion, deshaciendo un arrastre de loop cuando lo que se quiere deshacer es un borrado. Los anclajes de tempo si entran porque son anotacion, del mismo tipo que un marcador. Sin boton: `Ctrl+Z`, `Ctrl+Shift+Z` y tambien `Ctrl+Y`.
 - El arrastre de un marcador guarda su estado previo en un pendiente al `mousedown` y solo lo apila en `mouseup` si `moved`: un click simple sobre un marcador hace seek y no debe dejar un paso de deshacer vacio.
+
+- Rejilla de compases sobre anclajes de tempo, `S.tempo = [{t, bpm, beats}]`. Cada anclaje gobierna hasta el siguiente y su `t` es el pulso 1 de un compas. El desfase de una intro que no empieza en el pulso 1 no es un parametro: es la posicion del anclaje, y se arregla arrastrandolo. Diseno completo en `docs/2026-08-30-tempo-grid-design.md`, plan en `docs/2026-08-30-tempo-grid-plan.md`.
+- La rejilla es guia visual y no imanta. No toca `addMarker()` ni el arrastre de marcadores.
+- Sin denominador de cifra de compas: no cambia donde caen las lineas, que es lo unico que se dibuja. La etiqueta de un anclaje es `128 · 4`.
+- El BPM del tap sale del primer y ultimo golpe, no del promedio de intervalos: asi el error de la mano no se acumula y mas golpes dan mas precision. Fuera de 30 a 300 el golpe se descarta.
+- El corte de serie del tap va por reloj de pared, `performance.now()`, no por `audio.currentTime`: con el audio parado el tiempo del medio no avanza y la serie no caducaria nunca. Los valores del tap si salen de `audio.currentTime`, que corre en tiempo del medio y da el BPM correcto aunque se escuche a 0.5x.
+- La latencia entre lo que se oye y la llegada de la tecla no se compensa. El desplazamiento es sistematico y se corrige arrastrando el anclaje, que es el mismo gesto que resuelve la intro.
+- Las bandas de tempo, secciones y acordes se ocultan y se muestran. Al ocultar, la banda colapsa y la onda gana su alto: `laneLayout()` recalcula el apilado y `LANE` dejo de ser constante. Ocultar el tempo oculta tambien la rejilla, que es el ruido que se quiere quitar.
+- Que bandas se ven es preferencia global en `aures:lanes`, junto a `aures:accent`, y no entra en `snapshot()`: lo que miras no es propiedad de la cancion y no debe viajar en el `.aures.json`.
+- `Shift+M`, `Shift+C` y `Shift+T` ocultan; la minuscula sigue anadiendo o tapeando. Se comprueba `e.shiftKey`, no la caja de la letra, para que Bloq Mayus no invierta las dos acciones. Anadir sobre una banda oculta la vuelve a mostrar, porque si no la tecla parece no hacer nada.
+- Primera prueba automatica del proyecto: `tools/tempo.test.mjs`, sin framework ni dependencias. Extrae el bloque puro de `index.html` por los centinelas `PURE-TEMPO-START` y `PURE-TEMPO-END` y lo corre en node. 26 aserciones. Todo lo que se pueda calcular sin lienzo ni DOM vive dentro de esos centinelas.
+- Los documentos de diseno y plan viven en `docs/`, y sus versiones anteriores en `docs/.backups/`.
 
 ## Estado y pendientes
 
@@ -36,10 +48,17 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Publicado el 2026-08-25 en https://github.com/memoriainfinita/aures. Repo publico, rama `main`.
 - GitHub Pages sirviendo desde la raiz de `main`: https://memoriainfinita.github.io/aures/. Sin workflow ni build; cada push actualiza la app. La primera construccion tardo 230 s en responder.
 - Comprobado el 2026-08-25: el HTML que sirve Pages es identico byte a byte al local, y la build quedo en estado `built` sin errores.
-- Verificacion hecha: `node --check` sobre el script extraido del HTML, y prueba en node de las funciones de color (`mix`, `rgba`).
+- Verificacion hecha: `node --check` sobre el script extraido del HTML, `node tools/tempo.test.mjs` con 26 aserciones en verde, y prueba en node de las funciones de color (`mix`, `rgba`).
+- La rejilla y el tap: probados a mano por mykl el 2026-08-30, funcionan.
+- La ocultacion de bandas: sin probar a mano. Solo tiene detras `node --check` y las seis aserciones de `laneLayout()`. Sin comprobar que la onda crece de verdad, que las bandas restantes suben bien, ni que el boton nuevo no descuadra la cabecera del panel.
 - Pruebas de comportamiento hechas a mano por mykl. La extension de Chrome no conectaba, ni el 2026-08-25 ni el 2026-08-30.
+- Lo trabajado el 2026-08-30 esta commiteado en local y **sin publicar**. Pages sigue sirviendo la version anterior a la rejilla.
 
 ## Pendientes
 
-- Rejilla de compases con tap tempo: marcar el pulso con una tecla, deducir el tempo y dibujar lineas de compas a las que se peguen los marcadores. Es lo que mas cambiaria la app para transcribir y tambien, con diferencia, lo mas caro. Planteado y aplazado el 2026-08-30.
-- Descartados el mismo dia, no volver sobre ellos sin motivo nuevo: heredar el nombre del acorde anterior al crear uno, y exportar el cifrado como texto.
+- Publicar: `git push` de los siete commits del 2026-08-30. Hasta que se haga, la app que sirve Pages no tiene rejilla ni ocultacion de bandas.
+- Comprobar a mano la ocultacion de bandas. Caso concreto que merece un vistazo: ocultar las tres y ver que la onda arranca justo bajo la regla de tiempo, sin linea suelta.
+- Rehacer `screenshot.png` contra `demo.mp3`, con la banda de tempo y la rejilla visibles. El texto alternativo del README ya las nombra. La captura la hace mykl: la extension de Chrome no conecta en esta maquina.
+- Dos numeros elegidos a ojo, sin verlos dibujados: el umbral de 40 px para escribir el numero de compas en la banda, y el reparto de anchuras de la fila de la lista de tempo, donde `.mk input` lleva `flex:1 1 auto` y hace que las anchuras fijadas actuen solo como base.
+- Fuera de alcance por decision, no por olvido: compensacion de latencia del tap, deteccion automatica de tempo a partir del audio, denominador de la cifra de compas, e imantado de marcadores a la rejilla.
+- Descartados el 2026-08-30, no volver sobre ellos sin motivo nuevo: heredar el nombre del acorde anterior al crear uno, y exportar el cifrado como texto.
