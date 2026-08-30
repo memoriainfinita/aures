@@ -511,6 +511,56 @@ function redo(){
   flash("redone");
 }
 
+/* ---------- tempo math ---------- */
+// pure: no DOM, no canvas, no S. tools/tempo.test.mjs pulls this block out
+// by the markers below and runs it in node. keep it that way.
+/* PURE-TEMPO-START */
+const BPM_MIN = 30, BPM_MAX = 300, BEATS_MIN = 1, BEATS_MAX = 16;
+
+function clampBpm(v){ return Math.min(BPM_MAX, Math.max(BPM_MIN, v)); }
+function clampBeats(v){ return Math.min(BEATS_MAX, Math.max(BEATS_MIN, Math.round(v))); }
+
+// anchors to spans: each one ends where the next begins, and carries the bar
+// number it starts on. only whole bars are counted, so the bar an anchor cuts
+// short does not add to the numbering.
+function tempoSpans(anchors, duration){
+  const a = anchors.slice().sort((x, y) => x.t - y.t);
+  const out = [];
+  let bar = 1;
+  for(let i = 0; i < a.length; i++){
+    const s = a[i];
+    const e = Math.max(s.t, i + 1 < a.length ? a[i+1].t : duration);
+    out.push({t:s.t, e, bpm:s.bpm, beats:s.beats, bar});
+    bar += Math.floor((e - s.t) / ((60 / s.bpm) * s.beats) + 1e-9);
+  }
+  return out;
+}
+
+// beats of one span inside [t0,t1]. downbeat marks the first beat of a bar
+function beatTimes(span, t0, t1){
+  const dt = 60 / span.bpm;
+  const from = Math.max(span.t, t0), to = Math.min(span.e, t1);
+  const out = [];
+  if(to < from) return out;
+  let k = Math.max(0, Math.ceil((from - span.t) / dt - 1e-9));
+  for(let t = span.t + k*dt; t <= to + 1e-9; k++, t = span.t + k*dt){
+    out.push({t, downbeat: k % span.beats === 0, bar: span.bar + Math.floor(k / span.beats)});
+  }
+  return out;
+}
+
+// first and last tap, never the mean of the gaps: that way the error of a hand
+// does not pile up and more taps mean more precision. out of range means the
+// tap is worthless (paused audio, a rewind mid series) and the caller drops it
+function bpmFromTaps(taps){
+  if(taps.length < 2) return null;
+  const span = taps[taps.length - 1] - taps[0];
+  if(span <= 0) return null;
+  const bpm = 60 * (taps.length - 1) / span;
+  return (bpm < BPM_MIN || bpm > BPM_MAX) ? null : bpm;
+}
+/* PURE-TEMPO-END */
+
 /* ---------- canvas ---------- */
 
 const mc = $("main"), oc = $("over");
