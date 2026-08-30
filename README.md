@@ -17,6 +17,7 @@ Your audio never leaves your machine. The file is read locally by the browser an
 - **Waveform** with wheel zoom, shift+wheel pan, and an overview strip showing where you are in the song
 - **Loop** any region by dragging over the waveform; drag the edges to adjust, or nudge them in 20 ms steps from the keyboard
 - **Section markers** and **chord markers** in separate lanes, each named, draggable, and saved
+- **Undo and redo** for markers, so a mistaken delete costs one `Ctrl+Z` rather than an evening
 - **Speed** from 0.25x to 1.5x with pitch preserved, so a passage slowed down stays in tune
 - **Per-file memory**: reopen the same audio and its markers, loop and speed come back automatically
 
@@ -31,6 +32,7 @@ Double-click any marker to loop from there to the next one — the fastest way t
 | `up` / `down` | zoom in / out, `0` fit whole song |
 | `M` | add section marker |
 | `C` | add chord marker |
+| `Ctrl+Z` / `Ctrl+Shift+Z` | undo / redo |
 | `I` / `O` | set loop in / out |
 | `R` | loop on / off |
 | `,` `.` / `<` `>` | nudge loop start / end |

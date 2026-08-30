@@ -221,6 +221,8 @@ input[type=color]{
                 <div class="row"><b>&uarr; &darr;</b>zoom &middot; <b>0</b> fit all</div>
                 <div class="row"><b>M</b>section here</div>
                 <div class="row"><b>C</b>chord here</div>
+                <div class="row"><b>ctrl+Z</b>undo</div>
+                <div class="row"><b>ctrl+shift+Z</b>redo</div>
                 <div class="row"><b>I / O</b>loop in / out</div>
                 <div class="row"><b>R</b>loop on/off</div>
                 <div class="row"><b>, .</b>nudge loop start</div>
@@ -472,6 +474,41 @@ async function importFile(file){
   applyData(doc.data);
   renderAll(); refresh(); draw(); save();
   flash("loaded " + file.name);
+}
+
+/* ---------- undo and redo ---------- */
+
+// only the markers travel through history. the loop, the speed and the accent are
+// cheap to redo by hand, and folding them in would make ctrl+z unpredictable in the
+// middle of a transcription: you would undo a loop drag meaning to undo a deletion.
+const HISTORY_MAX = 50;
+let undoStack = [], redoStack = [], pendingUndo = null;
+
+function markerState(){ return JSON.stringify({markers:S.markers, chords:S.chords}); }
+
+// a new change makes any redone-away future unreachable, as everywhere else
+function pushUndo(state){
+  undoStack.push(state === undefined ? markerState() : state);
+  if(undoStack.length > HISTORY_MAX) undoStack.shift();
+  redoStack = [];
+}
+function applyMarkerState(json){
+  const d = JSON.parse(json);
+  S.markers = d.markers;
+  S.chords  = d.chords;
+  renderAll(); refresh(); draw(); save();
+}
+function undo(){
+  if(!undoStack.length){ flash("nothing to undo"); return; }
+  redoStack.push(markerState());
+  applyMarkerState(undoStack.pop());
+  flash("undone");
+}
+function redo(){
+  if(!redoStack.length){ flash("nothing to redo"); return; }
+  undoStack.push(markerState());
+  applyMarkerState(redoStack.pop());
+  flash("redone");
 }
 
 /* ---------- canvas ---------- */
@@ -831,6 +868,7 @@ mc.addEventListener("mousedown", e => {
     const i = nearestMarker(arr, t, tolT);
     if(i >= 0){
       if(e.detail === 2){ loopSection(band, i); return; }
+      pendingUndo = markerState();
       drag = {mode:"mk", band, m:arr[i], moved:false, x0:x};
       return;
     }
@@ -875,11 +913,13 @@ window.addEventListener("mouseup", () => {
   const r = mc.getBoundingClientRect();
   if(d.mode === "mk"){
     if(d.moved){
+      pushUndo(pendingUndo);
       S[BANDS[d.band].key].sort((a,b) => a.t - b.t);
       renderAll(); draw(); save();
     }else{
       seek(d.m.t);
     }
+    pendingUndo = null;
     return;
   }
   if(d.mode === "maybe"){ seek(d.t0); return; }
@@ -928,6 +968,7 @@ window.addEventListener("mouseup", () => { odrag = false; });
 function addMarker(band, t){
   const B = BANDS[band], arr = S[B.key];
   const m = {t: t !== undefined ? t : audio.currentTime, name:""};
+  pushUndo();
   arr.push(m);
   arr.sort((a,b) => a.t - b.t);
   renderAll(); draw(); save();
@@ -935,6 +976,7 @@ function addMarker(band, t){
   if(inp) inp.focus();
 }
 function delMarker(band, i){
+  pushUndo();
   S[BANDS[band].key].splice(i, 1);
   renderAll(); draw(); save();
 }
@@ -1025,7 +1067,11 @@ window.addEventListener("keydown", e => {
     if(e.key === "Enter" || e.key === "Escape") e.target.blur();
     return;
   }
-  if(e.ctrlKey || e.metaKey) return;
+  if(e.ctrlKey || e.metaKey){
+    const z = e.key === "z" || e.key === "Z", y = e.key === "y" || e.key === "Y";
+    if(z || y){ e.preventDefault(); (y || e.shiftKey) ? redo() : undo(); }
+    return;
+  }
   const k = e.key;
   if(k === " "){ e.preventDefault(); togglePlay(); return; }
   if(k === "?" || k === "h" || k === "H"){ e.preventDefault(); helpToggle(); return; }

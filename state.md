@@ -27,6 +27,8 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Guardar y cargar por archivo `.aures.json`, uno por cancion, arrastrable sobre la ventana igual que el audio. Decidido el 2026-08-30 porque localStorage no cruza de maquina.
 - El documento importado se valida contra `size` y `duration` del audio abierto, con 0.05 s de tolerancia, nunca contra el nombre: renombrar el mp3 no debe romper la correspondencia. Si no coinciden, no se importa nada y se avisa en la barra de estado.
 - `snapshot()` y `applyData()` compartidos por localStorage y por el archivo: un solo formato de datos, no dos.
+- Deshacer y rehacer solo de marcadores, pila de 50 instantaneas de `{markers, chords}`. Decidido el 2026-08-30. El loop, la velocidad y el acento quedan fuera a proposito: incluirlos haria `Ctrl+Z` impredecible a mitad de transcripcion, deshaciendo un arrastre de loop cuando lo que se quiere deshacer es un borrado. Sin boton: `Ctrl+Z`, `Ctrl+Shift+Z` y tambien `Ctrl+Y`.
+- El arrastre de un marcador guarda su estado previo en un pendiente al `mousedown` y solo lo apila en `mouseup` si `moved`: un click simple sobre un marcador hace seek y no debe dejar un paso de deshacer vacio.
 
 ## Estado y pendientes
 
