@@ -82,9 +82,17 @@ aside h2{
 aside h2 button{padding:2px 8px;font-size:11px;margin-left:auto}
 aside h2.sec{border-left:3px solid var(--mark)}
 aside h2.cho{border-left:3px solid #3ddc97;border-top:1px solid var(--line)}
-#mlist,#clist{flex:1 1 auto;overflow-y:auto;min-height:44px}
+aside h2.tmp{border-left:3px solid #8ea2c6;border-top:1px solid var(--line)}
+#mlist,#clist,#tlist{flex:1 1 auto;overflow-y:auto;min-height:44px}
 #clist{flex-grow:1.6}                              /* there are usually many more chords */
-#mlist .empty,#clist .empty{padding:12px;color:var(--dim);font-size:11px}
+#tlist{flex-grow:.7}                               /* anchors are few */
+#mlist .empty,#clist .empty,#tlist .empty{padding:12px;color:var(--dim);font-size:11px}
+/* six controls in a 250 px panel: the row is tighter than the marker ones */
+#tlist .mk{gap:4px;padding:5px 6px}
+#tlist .t{min-width:42px;color:#b9c8e0}
+#tlist .num{width:44px;font-size:11px;padding:2px 4px}
+#tlist .beats{width:26px}
+#tlist .x{padding:2px 5px;font-size:11px}
 .mk{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid #1c1f26}
 .mk:hover{background:#1c1f26}
 .mk .n{width:16px;text-align:right;color:var(--dim);font-size:11px}
@@ -246,6 +254,8 @@ input[type=color]{
       <div id="mlist"></div>
       <h2 class="cho">Chords <button id="addch">Add</button></h2>
       <div id="clist"></div>
+      <h2 class="tmp">Tempo</h2>
+      <div id="tlist"></div>
     </aside>
   </main>
 
@@ -995,7 +1005,14 @@ mc.addEventListener("mousedown", e => {
   const tolT = (S.view.e - S.view.s) * (8 / r.width);
 
   const band = bandAt(y);
-  if(band === "tmp"){ seek(t); return; }
+  if(band === "tmp"){
+    const i = nearestMarker(S.tempo, t, tolT);
+    if(i < 0){ seek(t); return; }
+    if(e.detail === 2){ loopSpan(i); return; }
+    pendingUndo = markerState();
+    drag = {mode:"tmp", a:S.tempo[i], moved:false, x0:x};
+    return;
+  }
   if(band){
     const arr = S[BANDS[band].key];
     const i = nearestMarker(arr, t, tolT);
@@ -1023,6 +1040,13 @@ window.addEventListener("mousemove", e => {
     if(!drag.moved && Math.abs(x - drag.x0) <= 3) return;
     drag.moved = true;
     drag.m.t = clamp(t, 0, S.duration);
+    draw();
+    return;
+  }
+  if(drag.mode === "tmp"){
+    if(!drag.moved && Math.abs(x - drag.x0) <= 3) return;
+    drag.moved = true;
+    drag.a.t = clamp(t, 0, S.duration);
     draw();
     return;
   }
@@ -1055,6 +1079,17 @@ window.addEventListener("mouseup", () => {
     pendingUndo = null;
     return;
   }
+  if(d.mode === "tmp"){
+    if(d.moved){
+      pushUndo(pendingUndo);
+      S.tempo.sort((a, b) => a.t - b.t);
+      renderTempoList(); draw(); save();
+    }else{
+      seek(d.a.t);
+    }
+    pendingUndo = null;
+    return;
+  }
   if(d.mode === "maybe"){ seek(d.t0); return; }
   if(d.mode === "sel"){
     const t0 = xToTime(Math.min(d.x0, d.x1), r.width, S.view);
@@ -1079,7 +1114,8 @@ mc.addEventListener("mousemove", e => {
     (Math.abs(L.s - t) < tolT || Math.abs(L.e - t) < tolT);
   const band = bandAt(y);
   const onMark = band && band !== "tmp" && nearestMarker(S[BANDS[band].key], t, tolT) >= 0;
-  mc.style.cursor = (onMark || onEdge) ? "ew-resize" : "crosshair";
+  const onAnchor = band === "tmp" && nearestMarker(S.tempo, t, tolT) >= 0;
+  mc.style.cursor = (onMark || onAnchor || onEdge) ? "ew-resize" : "crosshair";
 });
 
 // overview: click and drag to move the view
@@ -1174,6 +1210,48 @@ function tap(){
   setStatus("tap " + taps.length + " · " + bpm.toFixed(1) + " BPM");
 }
 
+function setBpm(i, v){
+  const a = S.tempo[i];
+  if(!a || !isFinite(v)){ renderTempoList(); return; }
+  pushUndo();
+  a.bpm = clampBpm(v);
+  renderTempoList(); draw(); save();
+}
+function setBeats(i, v){
+  const a = S.tempo[i];
+  if(!a || !isFinite(v)){ renderTempoList(); return; }
+  pushUndo();
+  a.beats = clampBeats(v);
+  renderTempoList(); draw(); save();
+}
+// halving and doubling do not clamp: a clamped 200x2 would look like a tempo
+// somebody chose, and nobody did
+function scaleBpm(i, f){
+  const a = S.tempo[i];
+  if(!a) return;
+  const v = a.bpm * f;
+  if(v < BPM_MIN || v > BPM_MAX){ flash("out of " + BPM_MIN + "-" + BPM_MAX + " BPM"); return; }
+  pushUndo();
+  a.bpm = v;
+  renderTempoList(); draw(); save();
+}
+function delAnchor(i){
+  if(!S.tempo[i]) return;
+  pushUndo();
+  S.tempo.splice(i, 1);
+  renderTempoList(); draw(); save();
+}
+// loop one span, the same gesture the other lanes have on double click
+function loopSpan(i){
+  const a = S.tempo[i];
+  if(!a) return;
+  const next = S.tempo[i+1];
+  S.loop = {on:true, s:a.t, e: next ? next.t : S.duration};
+  seek(a.t);
+  refresh(); draw(); save();
+  if(audio.paused) audio.play().catch(()=>{});
+}
+
 function renderList(band){
   const B = BANDS[band], arr = S[B.key], box = $(B.list);
   box.innerHTML = "";
@@ -1212,8 +1290,58 @@ function renderList(band){
     box.appendChild(row);
   });
 }
-function renderAll(){ renderList("sec"); renderList("cho"); }
-function renderTempoList(){}                       // filled in with the side panel
+function renderAll(){ renderList("sec"); renderList("cho"); renderTempoList(); }
+function renderTempoList(){
+  const box = $("tlist");
+  box.innerHTML = "";
+  if(!S.tempo.length){
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "No tempo yet. Tap the beat with T.";
+    box.appendChild(e);
+    return;
+  }
+  S.tempo.forEach((a, i) => {
+    const row = document.createElement("div");
+    row.className = "mk";
+
+    const t = document.createElement("span");
+    t.className = "t";
+    t.textContent = fmt(a.t);
+    t.title = "Go there";
+    t.onclick = () => seek(a.t);
+
+    const bpm = document.createElement("input");
+    bpm.className = "num";
+    bpm.value = a.bpm.toFixed(1);
+    bpm.title = "BPM";
+    bpm.onchange = () => setBpm(i, parseFloat(bpm.value));
+
+    const beats = document.createElement("input");
+    beats.className = "num beats";                 // narrower: it holds one digit
+    beats.value = a.beats;
+    beats.title = "Beats per bar";
+    beats.onchange = () => setBeats(i, parseFloat(beats.value));
+
+    const half = document.createElement("button");
+    half.className = "x"; half.textContent = "/2";
+    half.title = "Half the tempo";
+    half.onclick = () => scaleBpm(i, 0.5);
+
+    const dbl = document.createElement("button");
+    dbl.className = "x"; dbl.textContent = "x2";
+    dbl.title = "Double the tempo";
+    dbl.onclick = () => scaleBpm(i, 2);
+
+    const del = document.createElement("button");
+    del.className = "x"; del.textContent = "x";
+    del.title = "Delete this anchor";
+    del.onclick = () => delAnchor(i);
+
+    row.append(t, bpm, beats, half, dbl, del);
+    box.appendChild(row);
+  });
+}
 
 /* ---------- loop ---------- */
 
