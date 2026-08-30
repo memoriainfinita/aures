@@ -573,16 +573,17 @@ let dpr = 1;
 
 // top lanes, in CSS px, stacked from the top down
 const RUL = 15;                                    // time ruler
+const TMP = 14;                                    // tempo anchors
 const SEC = 20;                                    // section markers
 const CHO = 18;                                    // chord markers
-const LANE = RUL + SEC + CHO;                      // total height: the waveform starts here
+const LANE = RUL + TMP + SEC + CHO;                // total height: the waveform starts here
 
 // definition of the two marker lanes
 const BANDS = {
-  sec: {y0:RUL, y1:RUL+SEC, key:"markers", fill:"#ffb300", text:"#ffcf62",
+  sec: {y0:RUL+TMP, y1:RUL+TMP+SEC, key:"markers", fill:"#ffb300", text:"#ffcf62",
         flag:true,  list:"mlist", ph:"section",
         empty:"No sections yet. Press M while playing."},
-  cho: {y0:RUL+SEC, y1:LANE,  key:"chords",  fill:"#3ddc97", text:"#9af0c8",
+  cho: {y0:RUL+TMP+SEC, y1:LANE,  key:"chords",  fill:"#3ddc97", text:"#9af0c8",
         flag:false, list:"clist", ph:"chord",
         empty:"No chords yet. Press C while playing."}
 };
@@ -616,6 +617,7 @@ function setAccent(hex, persist){
 }
 
 function bandAt(y){
+  if(y >= RUL && y < RUL+TMP) return "tmp";
   if(y >= BANDS.sec.y0 && y < BANDS.sec.y1) return "sec";
   if(y >= BANDS.cho.y0 && y < BANDS.cho.y1) return "cho";
   return null;
@@ -746,11 +748,13 @@ function drawMain(){
   const w = mc.width, h = mc.height, v = S.view;
   mx2.fillStyle = "#0e0f12"; mx2.fillRect(0,0,w,h);
   mx2.fillStyle = "#131519"; mx2.fillRect(0, 0, w, RUL*dpr);
-  mx2.fillStyle = "#181b22"; mx2.fillRect(0, RUL*dpr, w, SEC*dpr);
-  mx2.fillStyle = "#141a18"; mx2.fillRect(0, (RUL+SEC)*dpr, w, CHO*dpr);
+  mx2.fillStyle = "#151821"; mx2.fillRect(0, RUL*dpr, w, TMP*dpr);
+  mx2.fillStyle = "#181b22"; mx2.fillRect(0, (RUL+TMP)*dpr, w, SEC*dpr);
+  mx2.fillStyle = "#141a18"; mx2.fillRect(0, (RUL+TMP+SEC)*dpr, w, CHO*dpr);
   mx2.fillStyle = "#23262e";
   mx2.fillRect(0, RUL*dpr, w, dpr);
-  mx2.fillRect(0, (RUL+SEC)*dpr, w, dpr);
+  mx2.fillRect(0, (RUL+TMP)*dpr, w, dpr);
+  mx2.fillRect(0, (RUL+TMP+SEC)*dpr, w, dpr);
   mx2.fillRect(0, LANE*dpr - dpr, w, dpr);
   if(!S.duration) return;
 
@@ -917,6 +921,7 @@ mc.addEventListener("mousedown", e => {
   const tolT = (S.view.e - S.view.s) * (8 / r.width);
 
   const band = bandAt(y);
+  if(band === "tmp"){ seek(t); return; }
   if(band){
     const arr = S[BANDS[band].key];
     const i = nearestMarker(arr, t, tolT);
@@ -999,7 +1004,7 @@ mc.addEventListener("mousemove", e => {
   const onEdge = L.s !== null && L.e !== null &&
     (Math.abs(L.s - t) < tolT || Math.abs(L.e - t) < tolT);
   const band = bandAt(y);
-  const onMark = band && nearestMarker(S[BANDS[band].key], t, tolT) >= 0;
+  const onMark = band && band !== "tmp" && nearestMarker(S[BANDS[band].key], t, tolT) >= 0;
   mc.style.cursor = (onMark || onEdge) ? "ew-resize" : "crosshair";
 });
 
