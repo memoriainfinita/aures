@@ -298,6 +298,7 @@ const S = {
   loop:{on:false, s:null, e:null},
   markers:[],                                      // sections
   chords:[],                                       // chords
+  tempo:[],                                        // tempo anchors: {t, bpm, beats}
   follow:true
 };
 
@@ -321,7 +322,7 @@ async function load(file){
   if(!file) return;
   if(S.url) URL.revokeObjectURL(S.url);
   S.peaks = null; S.nPeaks = 0;
-  S.markers = []; S.chords = []; S.loop = {on:false, s:null, e:null};
+  S.markers = []; S.chords = []; S.tempo = []; S.loop = {on:false, s:null, e:null};
   S.name = file.name;
   S.size = file.size;
   S.url = URL.createObjectURL(file);
@@ -399,6 +400,7 @@ function snapshot(){
   return {
     markers: S.markers,
     chords: S.chords,
+    tempo: S.tempo,
     loop: S.loop,
     rate: audio.playbackRate,
     pitch: $("pitch").checked
@@ -408,6 +410,7 @@ function applyData(d){
   if(!d) return;
   S.markers = Array.isArray(d.markers) ? d.markers : [];
   S.chords  = Array.isArray(d.chords)  ? d.chords  : [];
+  S.tempo   = Array.isArray(d.tempo)   ? d.tempo   : [];
   if(d.loop) S.loop = {on:!!d.loop.on, s:d.loop.s, e:d.loop.e};
   if(d.rate) setRate(d.rate);
   if(typeof d.pitch === "boolean"){ $("pitch").checked = d.pitch; applyPitch(); }
@@ -484,7 +487,7 @@ async function importFile(file){
 const HISTORY_MAX = 50;
 let undoStack = [], redoStack = [], pendingUndo = null;
 
-function markerState(){ return JSON.stringify({markers:S.markers, chords:S.chords}); }
+function markerState(){ return JSON.stringify({markers:S.markers, chords:S.chords, tempo:S.tempo}); }
 
 // a new change makes any redone-away future unreachable, as everywhere else
 function pushUndo(state){
@@ -496,6 +499,7 @@ function applyMarkerState(json){
   const d = JSON.parse(json);
   S.markers = d.markers;
   S.chords  = d.chords;
+  S.tempo   = d.tempo || [];
   renderAll(); refresh(); draw(); save();
 }
 function undo(){
