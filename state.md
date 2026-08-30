@@ -24,6 +24,9 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Interfaz y comentarios del codigo en ingles. Traducidos desde espanol el 2026-08-30: 49 cadenas de interfaz y 48 comentarios. Motivo: repo publico con README en ingles. Los identificadores ya estaban en ingles, no se toco ninguno.
 - `demo.mp3` incluido en el repo: 40 s sinteticos generados con un script propio el 2026-08-30, sin derechos de terceros. Permite probar la app sin aportar audio y es la fuente de las capturas.
 - `screenshot.png` en el README, generado contra `demo.mp3`. Las capturas nunca se hacen contra audio real.
+- Guardar y cargar por archivo `.aures.json`, uno por cancion, arrastrable sobre la ventana igual que el audio. Decidido el 2026-08-30 porque localStorage no cruza de maquina.
+- El documento importado se valida contra `size` y `duration` del audio abierto, con 0.05 s de tolerancia, nunca contra el nombre: renombrar el mp3 no debe romper la correspondencia. Si no coinciden, no se importa nada y se avisa en la barra de estado.
+- `snapshot()` y `applyData()` compartidos por localStorage y por el archivo: un solo formato de datos, no dos.
 
 ## Estado y pendientes
 

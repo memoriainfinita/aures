@@ -36,9 +36,21 @@ Double-click any marker to loop from there to the next one — the fastest way t
 | `,` `.` / `<` `>` | nudge loop start / end |
 | `1`..`9` | jump to section n |
 | `+` / `-` | speed |
+| `S` | save the markers to a file |
 | `F` | follow the playhead on / off |
 | `Home` | back to start, or to the loop start when a loop is on |
 | `?` or `H` | all shortcuts, including mouse |
+
+## Moving work between machines
+
+`localStorage` is per browser and per machine. Press `S`, or the **Save** button, to
+download a small `.aures.json` you can keep next to your audio. Drop that file on the
+page on another machine and the markers come back.
+
+It only loads back onto the same audio. The file records the size and duration of the
+track it came from and refuses to import onto anything else: the times would be
+meaningless against a different cut of the song. Renaming the audio file is fine, the
+name is not part of the check.
 
 ## Running it locally
 

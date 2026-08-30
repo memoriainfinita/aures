@@ -184,6 +184,7 @@ input[type=color]{
   <header>
     <span class="name" id="fname"></span>
     <button id="hintbtn" title="Show or hide the shortcuts">?</button>
+    <button id="save" title="Save the markers to a file (S)">Save</button>
     <button id="close" title="Load another file">Change file</button>
     <span class="meta" id="fmeta"></span>
   </header>
@@ -227,6 +228,7 @@ input[type=color]{
                 <div class="row"><b>1..9</b>jump to section n</div>
                 <div class="row"><b>+ -</b>speed</div>
                 <div class="row"><b>F</b>follow the playhead</div>
+                <div class="row"><b>S</b>save the markers to a file</div>
                 <div class="row"><b>home</b>back to start</div>
                 <div class="row"><b>? / H</b>open or close this help</div>
               </div>
@@ -288,7 +290,7 @@ const audio = new Audio();
 audio.preload = "auto";
 
 const S = {
-  url:null, key:null, name:"",
+  url:null, key:null, name:"", size:0,
   peaks:null, nPeaks:0, sampleRate:44100, duration:0,
   view:{s:0, e:0},
   loop:{on:false, s:null, e:null},
@@ -319,6 +321,7 @@ async function load(file){
   S.peaks = null; S.nPeaks = 0;
   S.markers = []; S.chords = []; S.loop = {on:false, s:null, e:null};
   S.name = file.name;
+  S.size = file.size;
   S.url = URL.createObjectURL(file);
   audio.src = S.url;
 
@@ -389,31 +392,86 @@ function buildPeaks(ab){
 
 /* ---------- persistence ---------- */
 
-let saveT = null;
-function save(){
-  if(!S.key) return;
-  clearTimeout(saveT);
-  saveT = setTimeout(() => {
-    try{
-      localStorage.setItem(S.key, JSON.stringify({
-        markers: S.markers,
-        chords: S.chords,
-        loop: S.loop,
-        rate: audio.playbackRate,
-        pitch: $("pitch").checked
-      }));
-    }catch(e){ /* quota full or private mode: not critical */ }
-  }, 300);
+// the same shape goes to localStorage and to an exported file
+function snapshot(){
+  return {
+    markers: S.markers,
+    chords: S.chords,
+    loop: S.loop,
+    rate: audio.playbackRate,
+    pitch: $("pitch").checked
+  };
 }
-function restore(){
-  let d = null;
-  try{ d = JSON.parse(localStorage.getItem(S.key) || "null"); }catch(e){}
+function applyData(d){
   if(!d) return;
   S.markers = Array.isArray(d.markers) ? d.markers : [];
   S.chords  = Array.isArray(d.chords)  ? d.chords  : [];
   if(d.loop) S.loop = {on:!!d.loop.on, s:d.loop.s, e:d.loop.e};
   if(d.rate) setRate(d.rate);
   if(typeof d.pitch === "boolean"){ $("pitch").checked = d.pitch; applyPitch(); }
+}
+
+let saveT = null;
+function save(){
+  if(!S.key) return;
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    try{
+      localStorage.setItem(S.key, JSON.stringify(snapshot()));
+    }catch(e){ /* quota full or private mode: not critical */ }
+  }, 300);
+}
+function restore(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem(S.key) || "null"); }catch(e){}
+  applyData(d);
+}
+
+/* ---------- export and import ---------- */
+
+// localStorage is per browser and per machine. a file carries the work to
+// another machine, but only back onto the same audio: the times mean nothing
+// against a different cut of the song.
+
+let flashT = null;
+function flash(msg){
+  setStatus(msg);
+  clearTimeout(flashT);
+  flashT = setTimeout(() => setStatus(""), 4000);
+}
+
+function exportFile(){
+  if(!S.key) return;
+  const doc = {
+    app:"aures", v:1,
+    audio:{ name:S.name, size:S.size, duration:+S.duration.toFixed(2) },
+    data: snapshot()
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], {type:"application/json"}));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = S.name.replace(/\.[^.]+$/, "") + ".aures.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  flash("saved " + a.download);
+}
+
+function isDoc(file){ return /\.json$/i.test(file.name) || file.type === "application/json"; }
+
+async function importFile(file){
+  let doc = null;
+  try{ doc = JSON.parse(await file.text()); }catch(e){}
+  if(!doc || doc.app !== "aures" || !doc.data){ flash("not an aures file"); return; }
+  if(!S.key){ flash("open the audio first, then drop this file again"); return; }
+  const a = doc.audio || {};
+  // the name is not compared: renaming the audio must not break the match
+  if(a.size !== S.size || Math.abs((a.duration || 0) - S.duration) > 0.05){
+    flash("this file belongs to a different audio (" + (a.name || "unknown") + ")");
+    return;
+  }
+  applyData(doc.data);
+  renderAll(); refresh(); draw(); save();
+  flash("loaded " + file.name);
 }
 
 /* ---------- canvas ---------- */
@@ -996,6 +1054,7 @@ window.addEventListener("keydown", e => {
   if(k === "i" || k === "I"){ setLoopEdge("s"); return; }
   if(k === "o" || k === "O"){ setLoopEdge("e"); return; }
   if(k === "r" || k === "R"){ toggleLoop(); return; }
+  if(k === "s" || k === "S"){ e.preventDefault(); exportFile(); return; }
   if(k === "f" || k === "F"){
     S.follow = !S.follow;
     setStatus(S.follow ? "" : "follow off");
@@ -1017,6 +1076,7 @@ window.addEventListener("keydown", e => {
 
 $("play").onclick = togglePlay;
 $("home").onclick = () => seek(0);
+$("save").onclick = exportFile;
 $("loopbtn").onclick = toggleLoop;
 $("loopclr").onclick = () => { S.loop = {on:false, s:null, e:null}; refresh(); draw(); save(); };
 /* ---------- floating help over the waveform ---------- */
@@ -1068,7 +1128,8 @@ window.addEventListener("drop", e => {
   e.preventDefault();
   dz.classList.remove("over");
   const f = e.dataTransfer && e.dataTransfer.files[0];
-  if(f) load(f);
+  if(!f) return;
+  if(isDoc(f)) importFile(f); else load(f);
 });
 
 audio.addEventListener("timeupdate", () => { if(audio.paused) refresh(); });
