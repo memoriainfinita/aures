@@ -4,6 +4,10 @@ Transcribe songs by ear. One self-contained HTML file: no server, no build step,
 
 **[Open it](https://memoriainfinita.github.io/aures/)** and drop an audio file on the page.
 
+![aures with a track loaded: waveform, section and chord lanes, and an active loop](screenshot.png)
+
+No audio at hand? [`demo.mp3`](demo.mp3) is a 40-second synthetic track with four clearly different sections, made for trying the app out.
+
 Your audio never leaves your machine. The file is read locally by the browser and nothing is uploaded anywhere.
 
 *aures* is Latin for the ears — and, in classical usage, for the judgement of a listener whose ear is trained.
@@ -32,6 +36,8 @@ Double-click any marker to loop from there to the next one — the fastest way t
 | `,` `.` / `<` `>` | nudge loop start / end |
 | `1`..`9` | jump to section n |
 | `+` / `-` | speed |
+| `F` | follow the playhead on / off |
+| `Home` | back to start, or to the loop start when a loop is on |
 | `?` or `H` | all shortcuts, including mouse |
 
 ## Running it locally

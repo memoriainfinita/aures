@@ -4,8 +4,6 @@ App HTML autocontenida para transcribir canciones. Un solo archivo, `index.html`
 
 Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos, y en latin clasico la facultad de oir y el juicio de quien la tiene educada (`aures eruditae`). Se descarto el singular `auris` porque designa el organo, no el oido musical.
 
-- Ubicacion local: `D:\DOCS\CODELAB\1_in-progress\aures`.
-
 ## Decisiones
 
 - Velocidad sin cambio de tono con `preservesPitch` del elemento audio, no con time-stretch propio.
@@ -13,8 +11,8 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Picos precalculados a 128 muestras por pico. Cada columna de pixel agrega el rango que le corresponde.
 - Canvas en `position:absolute` dentro de `#mainwrap`, medido con `ResizeObserver`. Motivo: con el canvas dimensionado por flex, escribir `canvas.height` realimentaba el layout y la altura derivaba en cada resize.
 - Persistencia por archivo en localStorage, clave `nombre+tamano+duracion`: secciones, acordes, loop, velocidad y preservacion de tono.
-- Color de acento en localStorage global, clave `transcript:accent`. Es preferencia, no va por archivo.
-- Las claves de localStorage mantienen el prefijo `transcript:` despues del cambio de nombre. Renombrarlas a `auris:` habria dejado huerfanos los marcadores ya guardados por mykl al probar la app.
+- Color de acento en localStorage global, clave `aures:accent`. Es preferencia, no va por archivo.
+- Las claves de localStorage usan el prefijo `aures:`. Renombradas desde `transcript:` el 2026-08-30, sin migracion: mykl confirmo que no habia marcadores guardados.
 - Dos tipos de marcador en bandas propias: secciones con `M`, acordes con `C`. Bandas de 15 / 20 / 18 px para escala de tiempo, secciones y acordes.
 - Etiquetas con reserva de hueco: si dos marcadores se pisarian, la segunda etiqueta no se dibuja y queda solo la marca.
 - Atajos en modal sobre la onda en vez de panel fijo en el lateral, para no gastar espacio permanente.
@@ -22,6 +20,10 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 
 - Licencia GPL-3.0-or-later, elegida por mykl el 2026-08-25. Texto canonico descargado de gnu.org, no transcrito.
 - Repo publico: GitHub Pages no sirve repos privados sin plan de pago.
+- `1..9` navega solo secciones, no acordes. Decidido el 2026-08-30. Las dos bandas se guardan ordenadas por tiempo, asi que `1..9` es "ir a la seccion n" en orden de cancion. Los acordes son densos: nueve teclas solo alcanzarian los primeros compases. El acceso por acorde ya existe y es mejor, el doble click hace loop hasta el siguiente marcador en las dos bandas.
+- Interfaz y comentarios del codigo en ingles. Traducidos desde espanol el 2026-08-30: 49 cadenas de interfaz y 48 comentarios. Motivo: repo publico con README en ingles. Los identificadores ya estaban en ingles, no se toco ninguno.
+- `demo.mp3` incluido en el repo: 40 s sinteticos generados con un script propio el 2026-08-30, sin derechos de terceros. Permite probar la app sin aportar audio y es la fuente de las capturas.
+- `screenshot.png` en el README, generado contra `demo.mp3`. Las capturas nunca se hacen contra audio real.
 
 ## Estado y pendientes
 
@@ -30,6 +32,4 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - GitHub Pages sirviendo desde la raiz de `main`: https://memoriainfinita.github.io/aures/. Sin workflow ni build; cada push actualiza la app. La primera construccion tardo 230 s en responder.
 - Comprobado el 2026-08-25: el HTML que sirve Pages es identico byte a byte al local, y la build quedo en estado `built` sin errores.
 - Verificacion hecha: `node --check` sobre el script extraido del HTML, y prueba en node de las funciones de color (`mix`, `rgba`).
-- Verificacion NO hecha: prueba en navegador desde Claude Code. La extension de Chrome no conectaba en toda la sesion ("Browser extension is not connected"). Las pruebas de comportamiento las hizo mykl a mano.
-- `1..9` salta solo a secciones, no a acordes. Planteado a mykl, sin decidir.
-- Fuera de alcance, no solicitado: deteccion de tono o acordes, transposicion, export MIDI.
+- Pruebas de comportamiento hechas a mano por mykl. La extension de Chrome no conectaba, ni el 2026-08-25 ni el 2026-08-30.

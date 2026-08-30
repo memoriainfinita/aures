@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -55,14 +55,14 @@ header .meta{color:var(--dim);margin-left:auto;white-space:nowrap}
 
 main{flex:1 1 auto;display:flex;min-height:0;min-width:0}
 #waves{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;min-height:0}
-/* el canvas va en absoluto: asi su tamano de buffer no realimenta el layout flex */
+/* the canvas is absolutely positioned so its buffer size does not feed back into the flex layout */
 #mainwrap{flex:1 1 auto;position:relative;min-height:0;overflow:hidden}
 #main{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
 #over{
   flex:0 0 74px;height:74px;display:block;width:100%;
   border-top:1px solid var(--line);cursor:pointer
 }
-/* abajo del todo y efimero: nunca debe tapar la escala de tiempo */
+/* bottom-most and ephemeral: it must never cover the time ruler */
 #hint{
   position:absolute;bottom:8px;right:10px;color:var(--dim);font-size:11px;
   background:rgba(14,15,18,.82);padding:3px 7px;border-radius:4px;pointer-events:none;
@@ -83,7 +83,7 @@ aside h2 button{padding:2px 8px;font-size:11px;margin-left:auto}
 aside h2.sec{border-left:3px solid var(--mark)}
 aside h2.cho{border-left:3px solid #3ddc97;border-top:1px solid var(--line)}
 #mlist,#clist{flex:1 1 auto;overflow-y:auto;min-height:44px}
-#clist{flex-grow:1.6}                              /* los acordes suelen ser muchos mas */
+#clist{flex-grow:1.6}                              /* there are usually many more chords */
 #mlist .empty,#clist .empty{padding:12px;color:var(--dim);font-size:11px}
 .mk{display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid #1c1f26}
 .mk:hover{background:#1c1f26}
@@ -100,7 +100,7 @@ aside h2.cho{border-left:3px solid #3ddc97;border-top:1px solid var(--line)}
 .mk input:focus{outline:none;border-color:var(--wave);background:#0e0f12}
 .mk button{padding:1px 6px;font-size:11px;background:transparent;border-color:transparent}
 .mk button:hover{background:#2b2f3a;border-color:var(--line)}
-/* modal de atajos, sobre la onda */
+/* shortcuts modal, over the waveform */
 #help{
   position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;
   padding:16px;background:rgba(10,11,14,.72)
@@ -175,7 +175,7 @@ input[type=color]{
 <div id="drop">
   <div class="box">
     <h1>Aures</h1>
-    <p>Arrastra un archivo de audio, o haz click para elegirlo</p>
+    <p>Drop an audio file, or click to choose one</p>
   </div>
   <input type="file" id="file" accept="audio/*" hidden>
 </div>
@@ -183,8 +183,8 @@ input[type=color]{
 <div id="app">
   <header>
     <span class="name" id="fname"></span>
-    <button id="hintbtn" title="Mostrar u ocultar la ayuda sobre la onda">?</button>
-    <button id="close" title="Cargar otro archivo">Cambiar archivo</button>
+    <button id="hintbtn" title="Show or hide the shortcuts">?</button>
+    <button id="close" title="Load another file">Change file</button>
     <span class="meta" id="fmeta"></span>
   </header>
 
@@ -192,43 +192,43 @@ input[type=color]{
     <section id="waves">
       <div id="mainwrap">
         <canvas id="main"></canvas>
-        <div id="hint">pulsa ? para ver los atajos</div>
+        <div id="hint">press ? for the shortcuts</div>
 
         <div id="help" class="off">
           <div class="panel">
             <div class="top">
-              <span>Atajos</span>
-              <button id="helpclose" title="Cerrar (Esc)">Cerrar</button>
+              <span>Shortcuts</span>
+              <button id="helpclose" title="Close (Esc)">Close</button>
             </div>
             <div class="cols">
               <div>
-                <h3>Raton</h3>
-                <div class="row"><b>rueda</b>zoom sobre el cursor</div>
-                <div class="row"><b>shift + rueda</b>desplazar la vista</div>
-                <div class="row"><b>click</b>ir a esa posicion</div>
-                <div class="row"><b>arrastrar</b>crear loop y reproducirlo</div>
-                <div class="row"><b>bordes del loop</b>arrastrar para ajustar</div>
-                <div class="row"><b>bandas</b>arrastrar secciones y acordes</div>
-                <div class="row"><b>doble click</b>loop hasta el siguiente marcador</div>
-                <div class="row"><b>tira inferior</b>mover la vista por la cancion</div>
+                <h3>Mouse</h3>
+                <div class="row"><b>wheel</b>zoom at the cursor</div>
+                <div class="row"><b>shift + wheel</b>pan the view</div>
+                <div class="row"><b>click</b>seek there</div>
+                <div class="row"><b>drag</b>make a loop and play it</div>
+                <div class="row"><b>loop edges</b>drag to adjust</div>
+                <div class="row"><b>lanes</b>drag sections and chords</div>
+                <div class="row"><b>double click</b>loop to the next marker</div>
+                <div class="row"><b>overview strip</b>move the view along the song</div>
               </div>
               <div>
-                <h3>Teclado</h3>
-                <div class="row"><b>K / espacio</b>play / pausa</div>
-                <div class="row"><b>J / L</b>seek atras / adelante</div>
+                <h3>Keyboard</h3>
+                <div class="row"><b>K / space</b>play / pause</div>
+                <div class="row"><b>J / L</b>seek back / forward</div>
                 <div class="row"><b>&larr; &rarr;</b>seek 5s (shift 1s, alt 0.1s)</div>
-                <div class="row"><b>&uarr; &darr;</b>zoom &middot; <b>0</b> ver todo</div>
-                <div class="row"><b>M</b>seccion aqui</div>
-                <div class="row"><b>C</b>acorde aqui</div>
+                <div class="row"><b>&uarr; &darr;</b>zoom &middot; <b>0</b> fit all</div>
+                <div class="row"><b>M</b>section here</div>
+                <div class="row"><b>C</b>chord here</div>
                 <div class="row"><b>I / O</b>loop in / out</div>
                 <div class="row"><b>R</b>loop on/off</div>
-                <div class="row"><b>, .</b>ajustar inicio del loop</div>
-                <div class="row"><b>&lt; &gt;</b>ajustar fin del loop</div>
-                <div class="row"><b>1..9</b>ir a la seccion n</div>
-                <div class="row"><b>+ -</b>velocidad</div>
-                <div class="row"><b>F</b>seguir el cursor</div>
-                <div class="row"><b>inicio</b>volver al principio</div>
-                <div class="row"><b>? / H</b>abrir o cerrar esta ayuda</div>
+                <div class="row"><b>, .</b>nudge loop start</div>
+                <div class="row"><b>&lt; &gt;</b>nudge loop end</div>
+                <div class="row"><b>1..9</b>jump to section n</div>
+                <div class="row"><b>+ -</b>speed</div>
+                <div class="row"><b>F</b>follow the playhead</div>
+                <div class="row"><b>home</b>back to start</div>
+                <div class="row"><b>? / H</b>open or close this help</div>
               </div>
             </div>
           </div>
@@ -238,9 +238,9 @@ input[type=color]{
     </section>
 
     <aside>
-      <h2 class="sec">Secciones <button id="addmk">Anadir</button></h2>
+      <h2 class="sec">Sections <button id="addmk">Add</button></h2>
       <div id="mlist"></div>
-      <h2 class="cho">Acordes <button id="addch">Anadir</button></h2>
+      <h2 class="cho">Chords <button id="addch">Add</button></h2>
       <div id="clist"></div>
     </aside>
   </main>
@@ -248,16 +248,16 @@ input[type=color]{
   <footer>
     <div class="grp">
       <button id="play" style="min-width:74px">Play</button>
-      <button id="home" title="Al principio">|&lt;</button>
+      <button id="home" title="To the start">|&lt;</button>
     </div>
     <div id="time">0:00.000 <span>/ 0:00.000</span></div>
     <div class="grp">
       <button id="loopbtn">Loop</button>
-      <span id="loopinfo">sin seleccion</span>
-      <button id="loopclr" title="Borrar seleccion">Borrar</button>
+      <span id="loopinfo">no selection</span>
+      <button id="loopclr" title="Clear selection">Clear</button>
     </div>
     <div class="grp">
-      <label for="rate">Vel.</label>
+      <label for="rate">Speed</label>
       <input type="range" id="rate" min="0.25" max="1.5" step="0.05" value="1">
       <span id="rateval">1.00x</span>
       <button class="preset" data-r="0.5">0.5</button>
@@ -265,7 +265,7 @@ input[type=color]{
       <button class="preset" data-r="1">1</button>
     </div>
     <div class="grp">
-      <label><input type="checkbox" id="pitch" checked> preservar tono</label>
+      <label><input type="checkbox" id="pitch" checked> preserve pitch</label>
     </div>
     <div class="grp">
       <label for="vol">Vol.</label>
@@ -273,7 +273,7 @@ input[type=color]{
     </div>
     <div class="grp">
       <label for="accent">Color</label>
-      <input type="color" id="accent" value="#4a9eff" title="Color de la onda">
+      <input type="color" id="accent" value="#4a9eff" title="Waveform color">
     </div>
     <div id="status"></div>
   </footer>
@@ -283,7 +283,7 @@ input[type=color]{
 "use strict";
 
 const $ = id => document.getElementById(id);
-const SPP = 128;                       // muestras por pico almacenado
+const SPP = 128;                       // samples per stored peak
 const audio = new Audio();
 audio.preload = "auto";
 
@@ -292,12 +292,12 @@ const S = {
   peaks:null, nPeaks:0, sampleRate:44100, duration:0,
   view:{s:0, e:0},
   loop:{on:false, s:null, e:null},
-  markers:[],                                      // secciones
-  chords:[],                                       // acordes
+  markers:[],                                      // sections
+  chords:[],                                       // chords
   follow:true
 };
 
-/* ---------- utilidades ---------- */
+/* ---------- helpers ---------- */
 
 function fmt(t){
   if(!isFinite(t)) t = 0;
@@ -311,7 +311,7 @@ function fmtShort(t){
 const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
 function setStatus(msg){ $("status").textContent = msg || ""; }
 
-/* ---------- carga de archivo ---------- */
+/* ---------- file loading ---------- */
 
 async function load(file){
   if(!file) return;
@@ -326,11 +326,11 @@ async function load(file){
   $("app").classList.add("show");
   $("fname").textContent = file.name;
   $("fmeta").textContent = "";
-  setStatus("decodificando...");
+  setStatus("decoding...");
   renderAll();
   resize();
 
-  // reproducible antes de tener la onda dibujada
+  // playable before the waveform is drawn
   await new Promise(res => {
     if(audio.readyState >= 1) return res();
     audio.addEventListener("loadedmetadata", res, {once:true});
@@ -338,7 +338,7 @@ async function load(file){
   S.duration = audio.duration || 0;
   S.view = {s:0, e:S.duration};
 
-  S.key = "transcript:" + file.name + ":" + file.size + ":" + S.duration.toFixed(2);
+  S.key = "aures:" + file.name + ":" + file.size + ":" + S.duration.toFixed(2);
   restore();
   renderAll();
   refresh();
@@ -357,7 +357,7 @@ async function load(file){
     setStatus("");
   }catch(err){
     console.error(err);
-    setStatus("no se pudo dibujar la onda (formato no soportado); la reproduccion funciona igual");
+    setStatus("could not draw the waveform (unsupported format); playback still works");
   }
   $("fmeta").textContent = fmtShort(S.duration) + "  ·  " + (S.sampleRate/1000).toFixed(1) + " kHz";
   draw();
@@ -387,7 +387,7 @@ function buildPeaks(ab){
   S.nPeaks = np;
 }
 
-/* ---------- persistencia ---------- */
+/* ---------- persistence ---------- */
 
 let saveT = null;
 function save(){
@@ -402,7 +402,7 @@ function save(){
         rate: audio.playbackRate,
         pitch: $("pitch").checked
       }));
-    }catch(e){ /* cuota llena o modo privado: no es critico */ }
+    }catch(e){ /* quota full or private mode: not critical */ }
   }, 300);
 }
 function restore(){
@@ -422,26 +422,26 @@ const mc = $("main"), oc = $("over");
 const mx2 = mc.getContext("2d"), ox2 = oc.getContext("2d");
 let dpr = 1;
 
-// bandas superiores, en px CSS, apiladas de arriba abajo
-const RUL = 15;                                    // escala de tiempo
-const SEC = 20;                                    // marcadores de seccion
-const CHO = 18;                                    // marcadores de acorde
-const LANE = RUL + SEC + CHO;                      // alto total: la onda empieza aqui
+// top lanes, in CSS px, stacked from the top down
+const RUL = 15;                                    // time ruler
+const SEC = 20;                                    // section markers
+const CHO = 18;                                    // chord markers
+const LANE = RUL + SEC + CHO;                      // total height: the waveform starts here
 
-// definicion de las dos bandas de marcadores
+// definition of the two marker lanes
 const BANDS = {
   sec: {y0:RUL, y1:RUL+SEC, key:"markers", fill:"#ffb300", text:"#ffcf62",
-        flag:true,  list:"mlist", ph:"seccion",
-        empty:"Sin secciones. Pulsa M durante la reproduccion."},
+        flag:true,  list:"mlist", ph:"section",
+        empty:"No sections yet. Press M while playing."},
   cho: {y0:RUL+SEC, y1:LANE,  key:"chords",  fill:"#3ddc97", text:"#9af0c8",
-        flag:false, list:"clist", ph:"acorde",
-        empty:"Sin acordes. Pulsa C durante la reproduccion."}
+        flag:false, list:"clist", ph:"chord",
+        empty:"No chords yet. Press C while playing."}
 };
-/* ---------- color de acento ---------- */
+/* ---------- accent color ---------- */
 
 let ACC = "#4a9eff", ACC_DIM = "#2f5f96", ACC_SEL = "rgba(74,158,255,.18)";
 
-function mix(hex, over, f){                        // f = cuanto de "over"
+function mix(hex, over, f){                        // f = how much of "over"
   const a = parseInt(hex.slice(1), 16), b = parseInt(over.slice(1), 16);
   const c = [16,8,0].map(s =>
     Math.round((((a>>s)&255) * (1-f)) + (((b>>s)&255) * f)));
@@ -454,14 +454,14 @@ function rgba(hex, al){
 function setAccent(hex, persist){
   if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
   ACC = hex.toLowerCase();
-  ACC_DIM = mix(ACC, "#0e0f12", .45);              // onda del overview, mas apagada
+  ACC_DIM = mix(ACC, "#0e0f12", .45);              // overview waveform, dimmer
   ACC_SEL = rgba(ACC, .18);
   const root = document.documentElement.style;
   root.setProperty("--wave", ACC);
   root.setProperty("--wave-dim", mix(ACC, "#0e0f12", .55));
   $("accent").value = ACC;
   if(persist !== false){
-    try{ localStorage.setItem("transcript:accent", ACC); }catch(e){}
+    try{ localStorage.setItem("aures:accent", ACC); }catch(e){}
   }
   draw();
 }
@@ -477,7 +477,7 @@ function resize(){
   let changed = false;
   for(const c of [mc, oc]){
     const r = c.getBoundingClientRect();
-    if(r.width < 1 || r.height < 1) continue;          // panel oculto o aun sin layout
+    if(r.width < 1 || r.height < 1) continue;          // panel hidden or not laid out yet
     const w = Math.max(1, Math.round(r.width * dpr));
     const h = Math.max(1, Math.round(r.height * dpr));
     if(c.width !== w || c.height !== h){ c.width = w; c.height = h; changed = true; }
@@ -485,22 +485,22 @@ function resize(){
   if(changed || !S.duration) draw();
 }
 
-// ResizeObserver en vez de window.resize: tambien capta el footer al envolverse,
-// los breakpoints y cualquier cambio de layout que no venga de la ventana
+// ResizeObserver instead of window.resize: it also catches the footer wrapping,
+// the breakpoints and any layout change that does not come from the window
 if(window.ResizeObserver){
   new ResizeObserver(() => resize()).observe($("waves"));
 }else{
   window.addEventListener("resize", resize);
 }
 
-// cambio de densidad de pixel (mover la ventana a otro monitor)
+// pixel density change (moving the window to another monitor)
 let dprMQ = null;
 function watchDpr(){
   try{
     if(dprMQ) dprMQ.removeEventListener("change", onDpr);
     dprMQ = matchMedia("(resolution: " + (window.devicePixelRatio || 1) + "dppx)");
     dprMQ.addEventListener("change", onDpr);
-  }catch(e){ /* navegador sin soporte: se pierde el reajuste al cambiar de monitor */ }
+  }catch(e){ /* browser without support: the readjustment on monitor change is lost */ }
 }
 function onDpr(){ watchDpr(); resize(); }
 watchDpr();
@@ -550,41 +550,41 @@ function drawRuler(ctx, w, v, h){
   ctx.lineWidth = dpr;
   for(let t = Math.ceil(v.s/st)*st; t <= v.e; t += st){
     const x = Math.round(timeToX(t, w, v)) + .5;
-    // marca corta en la banda de la escala, linea larga sobre la onda
+    // short tick in the ruler lane, long line over the waveform
     ctx.beginPath(); ctx.moveTo(x, (RUL-4)*dpr); ctx.lineTo(x, RUL*dpr); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x, LANE*dpr);    ctx.lineTo(x, h);       ctx.stroke();
     ctx.fillText(st < 1 ? t.toFixed(2) : fmtShort(t), x + 4*dpr, (RUL - 3)*dpr);
   }
 }
 
-// una banda de marcadores: linea guia, marca y etiqueta con reserva de hueco
+// one marker lane: guide line, tick and label with gap reservation
 function drawBand(name, w, h, v){
   const B = BANDS[name], arr = S[B.key];
   if(!arr.length) return;
   const y0 = B.y0*dpr, y1 = B.y1*dpr, hh = y1 - y0;
   mx2.font = (B.flag ? 11*dpr : 10.5*dpr) + "px ui-sans-serif,system-ui,sans-serif";
   mx2.textBaseline = "middle";
-  let lastRight = -1e9;                            // borde derecho de la ultima etiqueta
+  let lastRight = -1e9;                            // right edge of the last label
   arr.forEach((m, i) => {
     const x = timeToX(m.t, w, v);
     if(x < -80*dpr || x > w + 80*dpr) return;
     mx2.fillStyle = B.fill;
     if(B.flag){
-      mx2.fillRect(x, y0, dpr, h - y0);            // seccion: guia hasta abajo
+      mx2.fillRect(x, y0, dpr, h - y0);            // section: guide all the way down
       mx2.beginPath();
       mx2.moveTo(x, y0 + 2*dpr);
       mx2.lineTo(x + 9*dpr, y0 + hh/2);
       mx2.lineTo(x, y1 - 2*dpr);
       mx2.closePath(); mx2.fill();
     }else{
-      mx2.fillRect(x, y0, 2.5*dpr, hh);            // acorde: marca gruesa en su banda
-      mx2.fillStyle = "rgba(61,220,151,.20)";      // y guia tenue sobre la onda
+      mx2.fillRect(x, y0, 2.5*dpr, hh);            // chord: thick tick in its lane
+      mx2.fillStyle = "rgba(61,220,151,.20)";      // and faint guide over the waveform
       mx2.fillRect(x, LANE*dpr, dpr, h - LANE*dpr);
     }
     const label = B.flag ? (i+1) + (m.name ? " " + m.name : "") : (m.name || "-");
     const tw = mx2.measureText(label).width;
     const lx = x + (B.flag ? 11*dpr : 5*dpr);
-    if(lx < lastRight + 3*dpr) return;             // sin hueco: se dibuja solo la marca
+    if(lx < lastRight + 3*dpr) return;             // no gap: only the tick is drawn
     lastRight = lx + tw + 6*dpr;
     mx2.fillStyle = "rgba(14,15,18,.88)";
     mx2.fillRect(lx, y0 + dpr, tw + 6*dpr, hh - 2*dpr);
@@ -664,7 +664,7 @@ function drawOver(){
 
 function draw(){ drawMain(); drawOver(); }
 
-/* ---------- transporte ---------- */
+/* ---------- transport ---------- */
 
 function seek(t){
   audio.currentTime = clamp(t, 0, S.duration || 0);
@@ -673,7 +673,7 @@ function seek(t){
 function togglePlay(){
   if(audio.paused) audio.play().catch(()=>{}); else audio.pause();
 }
-audio.addEventListener("play",  () => { $("play").textContent = "Pausa"; tick(); });
+audio.addEventListener("play",  () => { $("play").textContent = "Pause"; tick(); });
 audio.addEventListener("pause", () => { $("play").textContent = "Play"; draw(); });
 audio.addEventListener("ended", () => { $("play").textContent = "Play"; });
 
@@ -695,7 +695,7 @@ function refresh(){
   $("time").innerHTML = fmt(audio.currentTime) + ' <span>/ ' + fmt(S.duration) + '</span>';
   const L = S.loop;
   $("loopinfo").textContent = (L.s === null || L.e === null)
-    ? "sin seleccion"
+    ? "no selection"
     : fmt(L.s) + " > " + fmt(L.e) + "  (" + (L.e - L.s).toFixed(2) + "s)";
   $("loopbtn").classList.toggle("on", L.on);
 }
@@ -720,7 +720,7 @@ function follow(){
   }
 }
 
-/* ---------- zoom y pan ---------- */
+/* ---------- zoom and pan ---------- */
 
 function setView(s, e){
   let span = clamp(e - s, 0.02, S.duration || 1);
@@ -747,7 +747,7 @@ mc.addEventListener("wheel", e => {
   }
 }, {passive:false});
 
-/* ---------- interaccion con la onda ---------- */
+/* ---------- waveform interaction ---------- */
 
 let drag = null;
 
@@ -777,7 +777,7 @@ mc.addEventListener("mousedown", e => {
       return;
     }
   }
-  if(y < LANE) { seek(t); return; }                 // hueco de las bandas: seek directo
+  if(y < LANE) { seek(t); return; }                 // lane gap: direct seek
   const L = S.loop;
   if(L.s !== null && Math.abs(L.s - t) < tolT){ drag = {mode:"edge", edge:"s"}; return; }
   if(L.e !== null && Math.abs(L.e - t) < tolT){ drag = {mode:"edge", edge:"e"}; return; }
@@ -836,7 +836,7 @@ window.addEventListener("mouseup", () => {
   refresh(); draw();
 });
 
-// cursor: indica cuando se puede agarrar un marcador o un borde del loop
+// cursor: shows when a marker or a loop edge can be grabbed
 mc.addEventListener("mousemove", e => {
   if(drag || !S.duration) return;
   const r = mc.getBoundingClientRect();
@@ -851,7 +851,7 @@ mc.addEventListener("mousemove", e => {
   mc.style.cursor = (onMark || onEdge) ? "ew-resize" : "crosshair";
 });
 
-// overview: click y arrastre para mover la vista
+// overview: click and drag to move the view
 let odrag = false;
 function overSeek(e){
   if(!S.duration) return;
@@ -865,7 +865,7 @@ oc.addEventListener("mousedown", e => { odrag = true; overSeek(e); });
 window.addEventListener("mousemove", e => { if(odrag) overSeek(e); });
 window.addEventListener("mouseup", () => { odrag = false; });
 
-/* ---------- marcadores ---------- */
+/* ---------- markers ---------- */
 
 function addMarker(band, t){
   const B = BANDS[band], arr = S[B.key];
@@ -880,7 +880,7 @@ function delMarker(band, i){
   S[BANDS[band].key].splice(i, 1);
   renderAll(); draw(); save();
 }
-// loop desde este marcador hasta el siguiente de su misma banda
+// loop from this marker to the next one in the same lane
 function loopSection(band, i){
   const arr = S[BANDS[band].key], m = arr[i];
   if(!m) return;
@@ -909,7 +909,7 @@ function renderList(band){
     const t = document.createElement("span");
     t.className = "t"; t.textContent = fmt(m.t).slice(0,-2);
     t.style.color = B.fill;
-    t.title = "Ir a " + fmt(m.t);
+    t.title = "Go to " + fmt(m.t);
     t.onclick = () => seek(m.t);
 
     const inp = document.createElement("input");
@@ -918,11 +918,11 @@ function renderList(band){
     inp.oninput = () => { m.name = inp.value; draw(); save(); };
 
     const lp = document.createElement("button");
-    lp.textContent = "loop"; lp.title = "Loop hasta el siguiente";
+    lp.textContent = "loop"; lp.title = "Loop to the next";
     lp.onclick = () => loopSection(band, i);
 
     const rm = document.createElement("button");
-    rm.textContent = "x"; rm.title = "Borrar";
+    rm.textContent = "x"; rm.title = "Delete";
     rm.onclick = () => delMarker(band, i);
 
     row.append(n, t, inp, lp, rm);
@@ -959,7 +959,7 @@ function toggleLoop(){
   refresh(); draw(); save();
 }
 
-/* ---------- teclado ---------- */
+/* ---------- keyboard ---------- */
 
 window.addEventListener("keydown", e => {
   const tag = (e.target.tagName || "").toLowerCase();
@@ -990,7 +990,7 @@ window.addEventListener("keydown", e => {
     seek(audio.currentTime + ((k === "l" || k === "L") ? d : -d));
     return;
   }
-  // preventDefault: si no, el mismo evento escribe la letra en el input recien enfocado
+  // preventDefault: otherwise the same event types the letter into the just-focused input
   if(k === "m" || k === "M"){ e.preventDefault(); addMarker("sec"); return; }
   if(k === "c" || k === "C"){ e.preventDefault(); addMarker("cho"); return; }
   if(k === "i" || k === "I"){ setLoopEdge("s"); return; }
@@ -998,7 +998,7 @@ window.addEventListener("keydown", e => {
   if(k === "r" || k === "R"){ toggleLoop(); return; }
   if(k === "f" || k === "F"){
     S.follow = !S.follow;
-    setStatus(S.follow ? "" : "seguimiento desactivado");
+    setStatus(S.follow ? "" : "follow off");
     return;
   }
   if(k === ","){ nudge("s", -0.02); return; }
@@ -1013,13 +1013,13 @@ window.addEventListener("keydown", e => {
   }
 });
 
-/* ---------- controles ---------- */
+/* ---------- controls ---------- */
 
 $("play").onclick = togglePlay;
 $("home").onclick = () => seek(0);
 $("loopbtn").onclick = toggleLoop;
 $("loopclr").onclick = () => { S.loop = {on:false, s:null, e:null}; refresh(); draw(); save(); };
-/* ---------- ayuda flotante sobre la onda ---------- */
+/* ---------- floating help over the waveform ---------- */
 
 let hintT = null;
 function hintShow(){
@@ -1029,7 +1029,7 @@ function hintShow(){
 }
 function hintHide(){ clearTimeout(hintT); $("hint").classList.add("off"); }
 
-// se va sola a la primera interaccion con la onda
+// it dismisses itself on the first interaction with the waveform
 ["mousedown","wheel"].forEach(ev => mc.addEventListener(ev, hintHide, {passive:true}));
 
 function helpShow(){ $("help").classList.remove("off"); hintHide(); }
@@ -1039,7 +1039,7 @@ function helpToggle(){
 }
 $("hintbtn").onclick = helpToggle;
 $("helpclose").onclick = helpHide;
-// click en el fondo cierra; dentro del panel no
+// clicking the backdrop closes it; clicking inside the panel does not
 $("help").onclick = e => { if(e.target === $("help")) helpHide(); };
 
 $("accent").oninput = e => setAccent(e.target.value);
@@ -1073,9 +1073,9 @@ window.addEventListener("drop", e => {
 
 audio.addEventListener("timeupdate", () => { if(audio.paused) refresh(); });
 
-// el acento es preferencia global, no va por archivo
+// the accent is a global preference, not per file
 let savedAcc = null;
-try{ savedAcc = localStorage.getItem("transcript:accent"); }catch(e){}
+try{ savedAcc = localStorage.getItem("aures:accent"); }catch(e){}
 setAccent(savedAcc || "#4a9eff", false);
 
 applyPitch();
