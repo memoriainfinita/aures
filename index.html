@@ -83,6 +83,7 @@ aside h2 button{padding:2px 8px;font-size:11px;margin-left:auto}
 aside h2.sec{border-left:3px solid var(--mark)}
 aside h2.cho{border-left:3px solid #3ddc97;border-top:1px solid var(--line)}
 aside h2.tmp{border-left:3px solid #8ea2c6;border-top:1px solid var(--line)}
+aside h2.off{opacity:.45}                          /* the lane is hidden on the canvas */
 #mlist,#clist,#tlist{flex:1 1 auto;overflow-y:auto;min-height:44px}
 #clist{flex-grow:1.6}                              /* there are usually many more chords */
 #tlist{flex-grow:.7}                               /* anchors are few */
@@ -231,6 +232,7 @@ input[type=color]{
                 <div class="row"><b>M</b>section here</div>
                 <div class="row"><b>C</b>chord here</div>
                 <div class="row"><b>T</b>tap the beat</div>
+                <div class="row"><b>shift + M / C / T</b>hide or show that lane</div>
                 <div class="row"><b>ctrl+Z</b>undo</div>
                 <div class="row"><b>ctrl+shift+Z</b>redo</div>
                 <div class="row"><b>I / O</b>loop in / out</div>
@@ -252,11 +254,16 @@ input[type=color]{
     </section>
 
     <aside>
-      <h2 class="sec">Sections <button id="addmk">Add</button></h2>
+      <h2 class="sec" id="h2sec">Sections
+        <button id="addmk">Add</button>
+        <button id="vissec" title="Hide or show this lane (shift+M)">Hide</button></h2>
       <div id="mlist"></div>
-      <h2 class="cho">Chords <button id="addch">Add</button></h2>
+      <h2 class="cho" id="h2cho">Chords
+        <button id="addch">Add</button>
+        <button id="vischo" title="Hide or show this lane (shift+C)">Hide</button></h2>
       <div id="clist"></div>
-      <h2 class="tmp">Tempo</h2>
+      <h2 class="tmp" id="h2tmp">Tempo
+        <button id="vistmp" title="Hide or show this lane (shift+T)">Hide</button></h2>
       <div id="tlist"></div>
     </aside>
   </main>
@@ -311,6 +318,7 @@ const S = {
   markers:[],                                      // sections
   chords:[],                                       // chords
   tempo:[],                                        // tempo anchors: {t, bpm, beats}
+  lanes:{tmp:true, sec:true, cho:true},             // which lanes are on screen
   follow:true
 };
 
@@ -534,6 +542,25 @@ function redo(){
 /* PURE-TEMPO-START */
 const BPM_MIN = 30, BPM_MAX = 300, BEATS_MIN = 1, BEATS_MAX = 16;
 
+// top lanes, in CSS px, stacked from the top down
+const RUL = 15;                                    // time ruler
+const TMP = 14;                                    // tempo anchors
+const SEC = 20;                                    // section markers
+const CHO = 18;                                    // chord markers
+
+// where each lane sits, given which ones are on. the heights never change:
+// only the stacking does, so a hidden lane hands its pixels to the waveform.
+// null means hidden, and lane is where the waveform starts
+function laneLayout(vis){
+  const out = {tmp:null, sec:null, cho:null};
+  let y = RUL;
+  if(vis.tmp){ out.tmp = {y0:y, y1:y+TMP}; y += TMP; }
+  if(vis.sec){ out.sec = {y0:y, y1:y+SEC}; y += SEC; }
+  if(vis.cho){ out.cho = {y0:y, y1:y+CHO}; y += CHO; }
+  out.lane = y;
+  return out;
+}
+
 function clampBpm(v){ return Math.min(BPM_MAX, Math.max(BPM_MIN, v)); }
 function clampBeats(v){ return Math.min(BEATS_MAX, Math.max(BEATS_MIN, Math.round(v))); }
 
@@ -584,12 +611,10 @@ const mc = $("main"), oc = $("over");
 const mx2 = mc.getContext("2d"), ox2 = oc.getContext("2d");
 let dpr = 1;
 
-// top lanes, in CSS px, stacked from the top down
-const RUL = 15;                                    // time ruler
-const TMP = 14;                                    // tempo anchors
-const SEC = 20;                                    // section markers
-const CHO = 18;                                    // chord markers
-const LANE = RUL + TMP + SEC + CHO;                // total height: the waveform starts here
+// the lane heights live in the pure block above, with laneLayout(). these two
+// are the current layout, recomputed by applyLayout() whenever a lane is hidden
+let LAY = laneLayout({tmp:true, sec:true, cho:true});
+let LANE = LAY.lane;                               // where the waveform starts
 
 // definition of the two marker lanes
 const BANDS = {
@@ -600,6 +625,18 @@ const BANDS = {
         flag:false, list:"clist", ph:"chord",
         empty:"No chords yet. Press C while playing."}
 };
+
+const LANE_BG = {tmp:"#151821", sec:"#181b22", cho:"#141a18"};
+
+// hidden lanes get an empty range, so bandAt() and the drawing skip them
+function applyLayout(){
+  LAY = laneLayout(S.lanes);
+  for(const n of ["sec", "cho"]){
+    BANDS[n].y0 = LAY[n] ? LAY[n].y0 : -1;
+    BANDS[n].y1 = LAY[n] ? LAY[n].y1 : -1;
+  }
+  LANE = LAY.lane;
+}
 /* ---------- accent color ---------- */
 
 let ACC = "#4a9eff", ACC_DIM = "#2f5f96", ACC_SEL = "rgba(74,158,255,.18)";
@@ -630,9 +667,9 @@ function setAccent(hex, persist){
 }
 
 function bandAt(y){
-  if(y >= RUL && y < RUL+TMP) return "tmp";
-  if(y >= BANDS.sec.y0 && y < BANDS.sec.y1) return "sec";
-  if(y >= BANDS.cho.y0 && y < BANDS.cho.y1) return "cho";
+  if(LAY.tmp && y >= LAY.tmp.y0 && y < LAY.tmp.y1) return "tmp";
+  if(LAY.sec && y >= LAY.sec.y0 && y < LAY.sec.y1) return "sec";
+  if(LAY.cho && y >= LAY.cho.y0 && y < LAY.cho.y1) return "cho";
   return null;
 }
 
@@ -726,7 +763,7 @@ function drawRuler(ctx, w, v, h, spans){
 // one marker lane: guide line, tick and label with gap reservation
 function drawBand(name, w, h, v){
   const B = BANDS[name], arr = S[B.key];
-  if(!arr.length) return;
+  if(!S.lanes[name] || !arr.length) return;
   const y0 = B.y0*dpr, y1 = B.y1*dpr, hh = y1 - y0;
   mx2.font = (B.flag ? 11*dpr : 10.5*dpr) + "px ui-sans-serif,system-ui,sans-serif";
   mx2.textBaseline = "middle";
@@ -763,7 +800,8 @@ function drawBand(name, w, h, v){
 // the ruler needs the same list to know where to stay out of the way
 function visibleSpans(v){
   const out = [];
-  if(!S.tempo.length || !S.duration) return out;
+  // hiding the tempo lane hides the grid too: the lines are the noise
+  if(!S.lanes.tmp || !S.tempo.length || !S.duration) return out;
   const w = mc.width;
   for(const sp of tempoSpans(S.tempo, S.duration)){
     if(sp.e <= v.s || sp.t >= v.e || sp.e <= sp.t) continue;
@@ -794,7 +832,7 @@ function drawGrid(w, h, v, spans){
         mx2.fillStyle = "#59627a";
         mx2.font = (9*dpr) + "px ui-monospace,monospace";
         mx2.textBaseline = "middle";
-        mx2.fillText(b.bar, x + 3*dpr, (RUL + TMP/2)*dpr);
+        mx2.fillText(b.bar, x + 3*dpr, (LAY.tmp.y0 + TMP/2)*dpr);
       }
     }
   }
@@ -803,8 +841,8 @@ function drawGrid(w, h, v, spans){
 // the anchors themselves, over the bar numbers, with the same gap reservation
 // the other lanes use
 function drawTempoBand(w, h, v){
-  if(!S.tempo.length) return;
-  const y0 = RUL*dpr, y1 = (RUL+TMP)*dpr, hh = y1 - y0;
+  if(!LAY.tmp || !S.tempo.length) return;
+  const y0 = LAY.tmp.y0*dpr, y1 = LAY.tmp.y1*dpr, hh = y1 - y0;
   mx2.font = (10*dpr) + "px ui-sans-serif,system-ui,sans-serif";
   mx2.textBaseline = "middle";
   let lastRight = -1e9;
@@ -831,13 +869,14 @@ function drawMain(){
   const w = mc.width, h = mc.height, v = S.view;
   mx2.fillStyle = "#0e0f12"; mx2.fillRect(0,0,w,h);
   mx2.fillStyle = "#131519"; mx2.fillRect(0, 0, w, RUL*dpr);
-  mx2.fillStyle = "#151821"; mx2.fillRect(0, RUL*dpr, w, TMP*dpr);
-  mx2.fillStyle = "#181b22"; mx2.fillRect(0, (RUL+TMP)*dpr, w, SEC*dpr);
-  mx2.fillStyle = "#141a18"; mx2.fillRect(0, (RUL+TMP+SEC)*dpr, w, CHO*dpr);
+  for(const n of ["tmp", "sec", "cho"]){
+    if(!LAY[n]) continue;
+    mx2.fillStyle = LANE_BG[n];
+    mx2.fillRect(0, LAY[n].y0*dpr, w, (LAY[n].y1 - LAY[n].y0)*dpr);
+    mx2.fillStyle = "#23262e";
+    mx2.fillRect(0, LAY[n].y0*dpr, w, dpr);
+  }
   mx2.fillStyle = "#23262e";
-  mx2.fillRect(0, RUL*dpr, w, dpr);
-  mx2.fillRect(0, (RUL+TMP)*dpr, w, dpr);
-  mx2.fillRect(0, (RUL+TMP+SEC)*dpr, w, dpr);
   mx2.fillRect(0, LANE*dpr - dpr, w, dpr);
   if(!S.duration) return;
 
@@ -1139,6 +1178,7 @@ window.addEventListener("mouseup", () => { odrag = false; });
 function addMarker(band, t){
   const B = BANDS[band], arr = S[B.key];
   const m = {t: t !== undefined ? t : audio.currentTime, name:""};
+  setLane(band, true);                             // adding to a hidden lane shows it
   pushUndo();
   arr.push(m);
   arr.sort((a,b) => a.t - b.t);
@@ -1188,6 +1228,7 @@ function seriesAlive(){
 
 function tap(){
   const now = audio.currentTime;
+  setLane("tmp", true);                            // tapping into a hidden lane shows it
   if(!seriesAlive()){ taps = []; tapAnchor = null; }
   tapWall = performance.now();
 
@@ -1292,6 +1333,34 @@ function renderList(band){
     box.appendChild(row);
   });
 }
+/* ---------- lane visibility ---------- */
+
+// what you are looking at is not a property of the song: this is a global
+// preference, like the accent, and it never travels inside snapshot()
+const LANE_NAME = {tmp:"tempo", sec:"sections", cho:"chords"};
+
+function saveLanes(){
+  try{ localStorage.setItem("aures:lanes", JSON.stringify(S.lanes)); }catch(e){}
+}
+function loadLanes(){
+  let d = null;
+  try{ d = JSON.parse(localStorage.getItem("aures:lanes") || "null"); }catch(e){}
+  if(d) S.lanes = {tmp:d.tmp !== false, sec:d.sec !== false, cho:d.cho !== false};
+}
+function renderLaneButtons(){
+  for(const n of ["tmp", "sec", "cho"]){
+    $("vis" + n).textContent = S.lanes[n] ? "Hide" : "Show";
+    $("h2" + n).classList.toggle("off", !S.lanes[n]);
+  }
+}
+function setLane(name, on){
+  if(S.lanes[name] === on) return;
+  S.lanes[name] = on;
+  applyLayout(); renderLaneButtons(); saveLanes(); draw();
+  setStatus(LANE_NAME[name] + (on ? " shown" : " hidden"));
+}
+function toggleLane(name){ setLane(name, !S.lanes[name]); }
+
 function renderAll(){ renderList("sec"); renderList("cho"); renderTempoList(); }
 function renderTempoList(){
   const box = $("tlist");
@@ -1409,9 +1478,11 @@ window.addEventListener("keydown", e => {
     return;
   }
   // preventDefault: otherwise the same event types the letter into the just-focused input
-  if(k === "m" || k === "M"){ e.preventDefault(); addMarker("sec"); return; }
-  if(k === "c" || k === "C"){ e.preventDefault(); addMarker("cho"); return; }
-  if(k === "t" || k === "T"){ e.preventDefault(); tap(); return; }
+  // shift hides or shows the lane the plain key writes into. shiftKey and not
+  // the case of the letter, so caps lock does not swap the two
+  if(k === "m" || k === "M"){ e.preventDefault(); e.shiftKey ? toggleLane("sec") : addMarker("sec"); return; }
+  if(k === "c" || k === "C"){ e.preventDefault(); e.shiftKey ? toggleLane("cho") : addMarker("cho"); return; }
+  if(k === "t" || k === "T"){ e.preventDefault(); e.shiftKey ? toggleLane("tmp") : tap(); return; }
   if(k === "i" || k === "I"){ setLoopEdge("s"); return; }
   if(k === "o" || k === "O"){ setLoopEdge("e"); return; }
   if(k === "r" || k === "R"){ toggleLoop(); return; }
@@ -1466,6 +1537,9 @@ $("help").onclick = e => { if(e.target === $("help")) helpHide(); };
 $("accent").oninput = e => setAccent(e.target.value);
 $("addmk").onclick = () => addMarker("sec");
 $("addch").onclick = () => addMarker("cho");
+$("vissec").onclick = () => toggleLane("sec");
+$("vischo").onclick = () => toggleLane("cho");
+$("vistmp").onclick = () => toggleLane("tmp");
 $("rate").oninput = e => setRate(+e.target.value);
 document.querySelectorAll(".preset").forEach(b => b.onclick = () => setRate(+b.dataset.r));
 $("pitch").onchange = () => { applyPitch(); save(); };
@@ -1499,6 +1573,11 @@ audio.addEventListener("timeupdate", () => { if(audio.paused) refresh(); });
 let savedAcc = null;
 try{ savedAcc = localStorage.getItem("aures:accent"); }catch(e){}
 setAccent(savedAcc || "#4a9eff", false);
+
+// the visible lanes are a global preference too
+loadLanes();
+applyLayout();
+renderLaneButtons();
 
 applyPitch();
 renderAll();

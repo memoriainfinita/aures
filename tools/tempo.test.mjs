@@ -7,7 +7,8 @@ const src = html.split("/* PURE-TEMPO-START */")[1];
 if(src === undefined) throw new Error("PURE-TEMPO-START marker not found in index.html");
 const body = src.split("/* PURE-TEMPO-END */")[0];
 const M = new Function(body + `
-  return {BPM_MIN, BPM_MAX, clampBpm, clampBeats, tempoSpans, beatTimes, bpmFromTaps};`)();
+  return {BPM_MIN, BPM_MAX, clampBpm, clampBeats, tempoSpans, beatTimes, bpmFromTaps,
+          laneLayout, RUL, TMP, SEC, CHO};`)();
 
 let fails = 0;
 function eq(name, got, want){
@@ -58,6 +59,20 @@ eq("a window outside the span is empty", M.beatTimes(sp, 20, 30), []);
 eq("bpm clamps low", M.clampBpm(10), 30);
 eq("bpm clamps high", M.clampBpm(900), 300);
 eq("beats round and clamp", [M.clampBeats(3.4), M.clampBeats(0), M.clampBeats(99)], [3, 1, 16]);
+
+// laneLayout: hiding a lane hands its pixels to the waveform
+const ALL = {tmp:true, sec:true, cho:true};
+eq("every lane on stacks under the ruler", M.laneLayout(ALL),
+   {tmp:{y0:15, y1:29}, sec:{y0:29, y1:49}, cho:{y0:49, y1:67}, lane:67});
+eq("hiding the tempo lane pulls the others up", M.laneLayout({tmp:false, sec:true, cho:true}),
+   {tmp:null, sec:{y0:15, y1:35}, cho:{y0:35, y1:53}, lane:53});
+eq("hiding a lane in the middle closes the gap", M.laneLayout({tmp:true, sec:false, cho:true}),
+   {tmp:{y0:15, y1:29}, sec:null, cho:{y0:29, y1:47}, lane:47});
+eq("with every lane hidden the waveform starts under the ruler",
+   M.laneLayout({tmp:false, sec:false, cho:false}).lane, M.RUL);
+eq("a hidden lane has no range at all", M.laneLayout({tmp:false, sec:false, cho:true}).sec, null);
+eq("the heights themselves never move",
+   [M.RUL, M.TMP, M.SEC, M.CHO], [15, 14, 20, 18]);
 
 console.log(fails ? fails + " failing" : "all passing");
 process.exit(fails ? 1 : 0);

@@ -18,6 +18,7 @@ Your audio never leaves your machine. The file is read locally by the browser an
 - **Loop** any region by dragging over the waveform; drag the edges to adjust, or nudge them in 20 ms steps from the keyboard
 - **Section markers** and **chord markers** in separate lanes, each named, draggable, and saved
 - **Bar grid** from a tempo you tap in with `T`: drag its anchor to line the grid up with a song whose intro does not start on beat one, and drop further anchors wherever the song changes tempo or metre. It is a guide to read against, never a magnet: your markers stay where you put them
+- **Hide any lane** with `shift+M`, `shift+C` or `shift+T`, or from the side panel. A hidden lane gives its height back to the waveform, so you can put the chords away and look at the shape of a passage on its own
 - **Undo and redo** for markers and tempo anchors, so a mistaken delete costs one `Ctrl+Z` rather than an evening
 - **Speed** from 0.25x to 1.5x with pitch preserved, so a passage slowed down stays in tune
 - **Per-file memory**: reopen the same audio and its markers, loop and speed come back automatically
@@ -34,6 +35,7 @@ Double-click any marker to loop from there to the next one — the fastest way t
 | `M` | add section marker |
 | `C` | add chord marker |
 | `T` | tap the beat to set the tempo |
+| `shift+M` / `shift+C` / `shift+T` | hide or show the sections, chords or tempo lane |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | undo / redo |
 | `I` / `O` | set loop in / out |
 | `R` | loop on / off |
