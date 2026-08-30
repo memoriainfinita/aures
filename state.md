@@ -49,16 +49,12 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - GitHub Pages sirviendo desde la raiz de `main`: https://memoriainfinita.github.io/aures/. Sin workflow ni build; cada push actualiza la app. La primera construccion tardo 230 s en responder.
 - Comprobado el 2026-08-25: el HTML que sirve Pages es identico byte a byte al local, y la build quedo en estado `built` sin errores.
 - Verificacion hecha: `node --check` sobre el script extraido del HTML, `node tools/tempo.test.mjs` con 26 aserciones en verde, y prueba en node de las funciones de color (`mix`, `rgba`).
-- La rejilla y el tap: probados a mano por mykl el 2026-08-30, funcionan.
-- La ocultacion de bandas: sin probar a mano. Solo tiene detras `node --check` y las seis aserciones de `laneLayout()`. Sin comprobar que la onda crece de verdad, que las bandas restantes suben bien, ni que el boton nuevo no descuadra la cabecera del panel.
+- La rejilla, el tap y la ocultacion de bandas: probados a mano por mykl el 2026-08-30, funcionan.
 - Pruebas de comportamiento hechas a mano por mykl. La extension de Chrome no conectaba, ni el 2026-08-25 ni el 2026-08-30.
-- Lo trabajado el 2026-08-30 esta commiteado en local y **sin publicar**. Pages sigue sirviendo la version anterior a la rejilla.
+- Publicado el 2026-08-30: `bd2aa4e..ec4fde8` empujado a `main`. Pages reconstruye sola en cada push.
 
 ## Pendientes
 
-- Publicar: `git push` de los siete commits del 2026-08-30. Hasta que se haga, la app que sirve Pages no tiene rejilla ni ocultacion de bandas.
-- Comprobar a mano la ocultacion de bandas. Caso concreto que merece un vistazo: ocultar las tres y ver que la onda arranca justo bajo la regla de tiempo, sin linea suelta.
-- Rehacer `screenshot.png` contra `demo.mp3`, con la banda de tempo y la rejilla visibles. El texto alternativo del README ya las nombra. La captura la hace mykl: la extension de Chrome no conecta en esta maquina.
-- Dos numeros elegidos a ojo, sin verlos dibujados: el umbral de 40 px para escribir el numero de compas en la banda, y el reparto de anchuras de la fila de la lista de tempo, donde `.mk input` lleva `flex:1 1 auto` y hace que las anchuras fijadas actuen solo como base.
+- Rehacer `screenshot.png` contra `demo.mp3`, con la banda de tempo y la rejilla visibles. El texto alternativo del README ya las nombra, asi que hasta que se rehaga el README describe algo que la imagen no muestra. La captura la hace mykl: la extension de Chrome no conecta en esta maquina.
 - Fuera de alcance por decision, no por olvido: compensacion de latencia del tap, deteccion automatica de tempo a partir del audio, denominador de la cifra de compas, e imantado de marcadores a la rejilla.
 - Descartados el 2026-08-30, no volver sobre ellos sin motivo nuevo: heredar el nombre del acorde anterior al crear uno, y exportar el cifrado como texto.
