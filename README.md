@@ -4,7 +4,7 @@ Transcribe songs by ear. One self-contained HTML file: no server, no build step,
 
 **[Open it](https://memoriainfinita.github.io/aures/)** and drop an audio file on the page.
 
-![aures with a track loaded: waveform, tempo, section and chord lanes, a bar grid and an active loop](screenshot.png)
+![aures with a track loaded: waveform, tempo, section and chord lanes, a bar grid and an active loop](docs/aures-demo.png)
 
 No audio at hand? [`demo.mp3`](demo.mp3) is a 40-second synthetic track with four clearly different sections, made for trying the app out.
 
@@ -69,3 +69,7 @@ Chrome and Firefox. Pitch-preserved playback relies on the media element's `pres
 ## License
 
 GNU General Public License v3.0 or later. See [LICENSE](LICENSE).
+
+## Credits
+
+Developed by [@memoriainfinita](https://github.com/memoriainfinita) with the assistance of Claude (Anthropic).
