@@ -23,7 +23,7 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - `1..9` navega solo secciones, no acordes. Decidido el 2026-08-30. Las dos bandas se guardan ordenadas por tiempo, asi que `1..9` es "ir a la seccion n" en orden de cancion. Los acordes son densos: nueve teclas solo alcanzarian los primeros compases. El acceso por acorde ya existe y es mejor, el doble click hace loop hasta el siguiente marcador en las dos bandas.
 - Interfaz y comentarios del codigo en ingles. Traducidos desde espanol el 2026-08-30: 49 cadenas de interfaz y 48 comentarios. Motivo: repo publico con README en ingles. Los identificadores ya estaban en ingles, no se toco ninguno.
 - `demo.mp3` incluido en el repo: 40 s sinteticos generados con un script propio el 2026-08-30, sin derechos de terceros. Permite probar la app sin aportar audio y es la fuente de las capturas.
-- `screenshot.png` en el README, generado contra `demo.mp3`. Las capturas nunca se hacen contra audio real.
+- Captura del README en `docs/aures-demo.png`, generada contra `demo.mp3`. Las capturas nunca se hacen contra audio real.
 - Guardar y cargar por archivo `.aures.json`, uno por cancion, arrastrable sobre la ventana igual que el audio. Decidido el 2026-08-30 porque localStorage no cruza de maquina.
 - El documento importado se valida contra `size` y `duration` del audio abierto, con 0.05 s de tolerancia, nunca contra el nombre: renombrar el mp3 no debe romper la correspondencia. Si no coinciden, no se importa nada y se avisa en la barra de estado.
 - `snapshot()` y `applyData()` compartidos por localStorage y por el archivo: un solo formato de datos, no dos.
@@ -53,6 +53,7 @@ Creada el 2026-08-25. Nombrada `aures` el 2026-08-25: plural de auris, los oidos
 - Pruebas de comportamiento hechas a mano por mykl. La extension de Chrome no conectaba, ni el 2026-08-25 ni el 2026-08-30.
 - Publicado el 2026-08-30: `bd2aa4e..ec4fde8` empujado a `main`. Pages reconstruye sola en cada push. Comprobado ese dia: el HTML servido pesa lo mismo que el local, 56201 bytes, y contiene los centinelas y `laneLayout`.
 - `screenshot.png` rehecha por mykl el 2026-08-30 contra `demo.mp3`, 1920x936: tres anclajes de tempo (120, 60, 120), la rejilla cambiando de paso en cada uno, la numeracion de compases siguiendo a traves de los tramos, y un loop activo.
+- 2026-09-21: captura movida de `screenshot.png` a `docs/aures-demo.png` y seccion Credits en el README.
 
 ## Pendientes
 
