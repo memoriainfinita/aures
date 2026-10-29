@@ -2,7 +2,7 @@
 
 Transcribe songs by ear. One self-contained HTML file: no server, no build step, no dependencies.
 
-**[Open it](https://memoriainfinita.github.io/aures/)** and drop an audio file on the page.
+**[Open it](https://memoriainfinita.github.io/aures/)** and drop an audio file on the page. **[Guide](docs/guide/README.md)**: how to use it, step by step.
 
 ![aures with a track loaded: waveform, tempo, section and chord lanes, a bar grid and an active loop](docs/aures-demo.png)
 
